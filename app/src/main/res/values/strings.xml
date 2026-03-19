@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- English -->
     <string name="app_name">WiseFox</string>
-    <string name="login_title">Bienvenido de Nuevo</string>
-    <string name="login_subtitle">Inicia sesión en tu cuenta</string>
-    <string name="hint_email">Correo Electrónico</string>
-    <string name="hint_password">Contraseña</string>
-    <string name="btn_login">Iniciar Sesión</string>
-    <string name="btn_register">¿No tienes cuenta? Regístrate</string>
-    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
-    <string name="nav_home">Inicio</string>
-    <string name="nav_transactions">Transacciones</string>
-    <string name="nav_ledger">Libro Mayor</string>
-    <string name="nav_profile">Perfil</string>
-    <string name="loading">Cargando…</string>
-    <string name="error_generic">Algo salió mal</string>
+    <string name="login_title">Welcome Back</string>
+    <string name="login_subtitle">Log in to your account</string>
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Password</string>
+    <string name="btn_login">Log in</string>
+    <string name="btn_register">No account? Register now</string>
+    <string name="forgot_password">Forgot your password?</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_transactions">Transactions</string>
+    <string name="nav_ledger">Ledger</string>
+    <string name="nav_profile">Profile</string>
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong</string>
+
+    <!-- Spanish -->
+
+
+    <!-- Chinese -->
+
 </resources>
