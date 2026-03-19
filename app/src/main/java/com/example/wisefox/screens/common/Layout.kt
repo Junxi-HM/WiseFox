@@ -1,15 +1,9 @@
 package com.example.wisefox.screens.common
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +12,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -34,17 +27,25 @@ import com.example.wisefox.ui.theme.*
 data class BottomNavItem(
     val route: String,
     val labelRes: Int,
-    val icon: ImageVector
+    val icon: Int
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem(Screen.Home.route,         R.string.nav_home,         Icons.Filled.Home),
-    BottomNavItem(Screen.Transactions.route, R.string.nav_transactions, Icons.Filled.List),
-    BottomNavItem(Screen.Ledger.route,       R.string.nav_ledger,       Icons.Filled.Menu),
-    BottomNavItem(Screen.Profile.route,      R.string.nav_profile,      Icons.Filled.AccountCircle),
+    BottomNavItem(Screen.Home.route, R.string.nav_home, R.drawable.ic_home),
+    BottomNavItem(Screen.Transactions.route, R.string.nav_transactions, R.drawable.ic_statistics),
+    BottomNavItem(Screen.Ledger.route, R.string.nav_ledger, R.drawable.ic_ai),
+    BottomNavItem(Screen.Profile.route, R.string.nav_profile, R.drawable.ic_profile),
 )
 
 // ── WiseFox App Shell ─────────────────────────────────────────────────────────
+private val brush = Brush.verticalGradient(
+    colors = listOf(
+        Color(0xFFFFF8E8),
+        Color(0xFFFFF0CC),
+        Color(0xFFFFE8B0)
+    )
+)
+
 /**
  * Wraps every main screen with:
  *  • Warm yellow gradient background
@@ -78,7 +79,7 @@ fun WiseFoxLayout(
         Column(modifier = Modifier.fillMaxSize()) {
 
             // ── Top spacer so card doesn't hug the status bar ──
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
             // ── Main content card ──────────────────────────────
             Box(
@@ -94,9 +95,9 @@ fun WiseFoxLayout(
                             elevation = 16.dp,
                             shape = RoundedCornerShape(32.dp),
                             ambientColor = WiseFoxOrangeDark.copy(alpha = 0.3f),
-                            spotColor   = WiseFoxOrangeDark.copy(alpha = 0.3f)
+                            spotColor = WiseFoxOrangeDark.copy(alpha = 0.3f)
                         ),
-                    shape  = RoundedCornerShape(32.dp),
+                    shape = RoundedCornerShape(32.dp),
                     colors = CardDefaults.cardColors(containerColor = WiseFoxCardBg)
                 ) {
                     content()
@@ -129,11 +130,12 @@ fun WiseFoxBottomBar(navController: NavController) {
     val currentDestination = navBackStackEntry?.destination
 
     NavigationBar(
-        modifier       = Modifier
+        modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .clip(RoundedCornerShape(24.dp)),
         containerColor = Color.White.copy(alpha = 0.85f),
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
+        windowInsets = WindowInsets(0, 0, 0, 0)
     ) {
         bottomNavItems.forEach { item ->
             val selected = currentDestination
@@ -142,26 +144,29 @@ fun WiseFoxBottomBar(navController: NavController) {
 
             NavigationBarItem(
                 selected = selected,
-                onClick  = {
+                onClick = {
                     navController.navigate(item.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
                         }
                         launchSingleTop = true
-                        restoreState    = true
+                        restoreState = true
                     }
                 },
                 icon = {
-                    Icon(
-                        imageVector        = item.icon,
-                        contentDescription = stringResource(item.labelRes)
+                    Image(
+                        painter = painterResource(id = item.icon),
+                        contentDescription = stringResource(item.labelRes),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .padding(bottom = 2.dp)
                     )
                 },
-                label  = { Text(stringResource(item.labelRes)) },
+                label = { Text(stringResource(item.labelRes)) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor   = WiseFoxOrangeDark,
-                    selectedTextColor   = WiseFoxOrangeDark,
-                    indicatorColor      = WiseFoxOrangePale,
+                    selectedIconColor = WiseFoxOrangeDark,
+                    selectedTextColor = WiseFoxOrangeDark,
+                    indicatorColor = WiseFoxOrangePale,
                     unselectedIconColor = TextSecondary,
                     unselectedTextColor = TextSecondary
                 )

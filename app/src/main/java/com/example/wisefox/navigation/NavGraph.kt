@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.wisefox.screens.HomeScreen
 import com.example.wisefox.ui.theme.TextWhite
 
 @Composable
@@ -39,7 +40,7 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         // ── Home ──────────────────────────────────────────────────────────────
         composable(Screen.Home.route) {
             WiseFoxLayout(navController = navController) {
-                PlaceholderScreen("Home")
+                HomeScreen()
             }
         }
 
