@@ -8,13 +8,16 @@
     <string name="hint_password">Password</string>
     <string name="btn_login">Log in</string>
     <string name="btn_register">No account? Register now</string>
-    <string name="forgot_password">Forgot your password?</string>
+    <string name="forgot_password">Forgot password?</string>
     <string name="nav_home">Home</string>
     <string name="nav_transactions">Transactions</string>
     <string name="nav_ledger">Ledger</string>
     <string name="nav_profile">Profile</string>
     <string name="loading">Loading…</string>
     <string name="error_generic">Something went wrong</string>
+    <string name="btn_login_google">Google Login</string>
+    <string name="earnings">Earnings</string>
+    <string name="expenses">Expenses</string>
 
     <!-- Spanish -->
 
