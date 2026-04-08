@@ -40,7 +40,7 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         // ── Home ──────────────────────────────────────────────────────────────
         composable(Screen.Home.route) {
             WiseFoxLayout(navController = navController) {
-                HomeScreen()
+                HomeScreen(navController)
             }
         }
 
