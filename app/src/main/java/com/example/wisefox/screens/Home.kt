@@ -42,6 +42,9 @@ import com.example.wisefox.R
 import com.example.wisefox.screens.common.WiseFoxLayout
 import com.example.wisefox.ui.theme.*
 
+private val GastosColor = Color(0xFFE06030)
+private val IngresosColor = Color(0xFF4A9E6A)
+
 @Composable
 fun HomeScreen(navController: NavController) {
     Column(
@@ -80,13 +83,15 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier.weight(1f),
                 iconRes = R.drawable.ic_earnings,
                 label = stringResource(R.string.earnings),
-                value = "1067€"
+                value = "1067€",
+                valueColor = IngresosColor
             )
             StatisticCard(
                 modifier = Modifier.weight(1f),
                 iconRes = R.drawable.ic_expenses,
                 label = stringResource(R.string.expenses),
-                value = "67€"
+                value = "67€",
+                valueColor = GastosColor
             )
         }
 
@@ -132,19 +137,57 @@ fun HomeScreen(navController: NavController) {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // ── Gastos / Ingresos legend ─────────────────────────
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "—",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = GastosColor
+                    )
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "gastos",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = GastosColor
+                    )
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "-",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = IngresosColor
+                    )
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "ingresos",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = IngresosColor
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         // ── Ledger Items ─────────────────────────────────────
-        LedgerItem(
-            label = "MY OWN LEDGER",
-            current = 695f,
-            max = 700f,
-            displayText = "695/700€"
-        )
+        LedgerItem(label = "MY OWN LEDGER", gastos = 555f, ingresos = 700f)
         Spacer(modifier = Modifier.height(10.dp))
-        LedgerItem(label = "SCHOOL LEDGER", current = 23f, max = 33f, displayText = "23/33€")
+        LedgerItem(label = "SCHOOL LEDGER", gastos = 23f, ingresos = 33f)
         Spacer(modifier = Modifier.height(10.dp))
-        LedgerItem(label = "FOOD LEDGER", current = 106f, max = 133f, displayText = "106/133€")
+        LedgerItem(label = "FOOD LEDGER", gastos = 106f, ingresos = 133f)
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -172,7 +215,8 @@ fun StatisticCard(
     modifier: Modifier = Modifier,
     iconRes: Int,
     label: String,
-    value: String
+    value: String,
+    valueColor: Color = WiseFoxOrangeDark
 ) {
     Card(
         modifier = modifier.height(80.dp),
@@ -202,7 +246,7 @@ fun StatisticCard(
                 text = value,
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    color = WiseFoxOrangeDark
+                    color = valueColor
                 )
             )
         }
@@ -212,46 +256,80 @@ fun StatisticCard(
 @Composable
 fun LedgerItem(
     label: String,
-    current: Float,
-    max: Float,
-    displayText: String
+    gastos: Float,
+    ingresos: Float
 ) {
+    // Both bars share the same scale — the larger value fills 100%
+    val maxValue = maxOf(gastos, ingresos)
+    val gastosProgress = (gastos / maxValue).coerceIn(0f, 1f)
+    val ingresosProgress = (ingresos / maxValue).coerceIn(0f, 1f)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = TextSecondary
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Gastos bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary
-                    )
+                LinearProgressIndicator(
+                    progress = { gastosProgress },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = GastosColor,
+                    trackColor = GastosColor.copy(alpha = 0.18f)
                 )
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = displayText,
-                    style = MaterialTheme.typography.bodyMedium.copy(
+                    text = "${gastos.toInt()}€",
+                    style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = WiseFoxOrangeDark
-                    )
+                        color = GastosColor
+                    ),
+                    modifier = Modifier.width(44.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            LinearProgressIndicator(
-                progress = { (current / max).coerceIn(0f, 1f) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = WiseFoxOrange,
-                trackColor = WiseFoxOrange.copy(alpha = 0.2f)
-            )
+
+            Spacer(modifier = Modifier.height(5.dp))
+
+            // Ingresos bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LinearProgressIndicator(
+                    progress = { ingresosProgress },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = IngresosColor,
+                    trackColor = IngresosColor.copy(alpha = 0.15f)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "${ingresos.toInt()}€",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = IngresosColor
+                    ),
+                    modifier = Modifier.width(44.dp)
+                )
+            }
         }
     }
 }
