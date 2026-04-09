@@ -2,11 +2,11 @@ package com.example.wisefox.screens.common
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -58,6 +59,7 @@ private val brush = Brush.verticalGradient(
  *       YourScreenContent()
  *   }
  */
+
 @Composable
 fun WiseFoxLayout(
     navController: NavController,
@@ -65,9 +67,14 @@ fun WiseFoxLayout(
 ) {
     val gradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFFFFF8E8),
-            Color(0xFFFFF0CC),
-            Color(0xFFFFE8B0)
+//            Color(0xFFFFF8E8),
+//            Color(0xFFFFF0CC),
+//            Color(0xFFFFE8B0)
+            Color(0xFFFEDD7B),
+            Color(0xFFFFE288),
+            Color(0xFFFFE490),
+            Color(0xFFFFE9A7),
+            Color(0xFFFFEEB9)
         )
     )
 
@@ -102,16 +109,6 @@ fun WiseFoxLayout(
                 ) {
                     content()
                 }
-
-                // Fox mascot peeking from top-left corner of card
-                Image(
-                    painter = painterResource(id = R.drawable.ic_fox_mascot),
-                    contentDescription = "WiseFox mascot",
-                    modifier = Modifier
-                        .size(72.dp)
-                        .align(Alignment.TopStart)
-                        .offset(x = 12.dp, y = (-32).dp)   // peek above card edge
-                )
             }
 
             // ── Bottom Navigation ──────────────────────────────
@@ -131,7 +128,12 @@ fun WiseFoxBottomBar(navController: NavController) {
 
     NavigationBar(
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp, vertical = 20.dp)
+            .border(
+                width = 2.dp,
+                color = Color.Gray.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(24.dp)
+            )
             .clip(RoundedCornerShape(24.dp)),
         containerColor = Color.White.copy(alpha = 0.85f),
         tonalElevation = 0.dp,
@@ -141,7 +143,6 @@ fun WiseFoxBottomBar(navController: NavController) {
             val selected = currentDestination
                 ?.hierarchy
                 ?.any { it.route == item.route } == true
-
             NavigationBarItem(
                 selected = selected,
                 onClick = {
@@ -162,7 +163,8 @@ fun WiseFoxBottomBar(navController: NavController) {
                             .padding(bottom = 2.dp)
                     )
                 },
-                label = { Text(stringResource(item.labelRes)) },
+                label = { Text(stringResource(item.labelRes),
+                    fontSize = 15.sp) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = WiseFoxOrangeDark,
                     selectedTextColor = WiseFoxOrangeDark,
