@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -31,7 +32,7 @@ data class BottomNavItem(
 )
 
 val bottomNavItems = listOf(
-    BottomNavItem(Screen.Home.route, R.string.nav_home, R.drawable.ic_ledger),
+    BottomNavItem(Screen.Home.route, R.string.nav_home, R.drawable.ic_home),
     BottomNavItem(Screen.Transactions.route, R.string.nav_transactions, R.drawable.ic_statistics),
     BottomNavItem(Screen.Ledger.route, R.string.nav_ledger, R.drawable.ic_ai),
     BottomNavItem(Screen.Profile.route, R.string.nav_profile, R.drawable.ic_profile),
@@ -162,7 +163,8 @@ fun WiseFoxBottomBar(navController: NavController) {
                             .padding(bottom = 2.dp)
                     )
                 },
-                label = { Text(stringResource(item.labelRes)) },
+                label = { Text(stringResource(item.labelRes),
+                    fontSize = 15.sp) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = WiseFoxOrangeDark,
                     selectedTextColor = WiseFoxOrangeDark,

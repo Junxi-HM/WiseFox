@@ -39,11 +39,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.wisefox.R
-import com.example.wisefox.screens.common.WiseFoxLayout
 import com.example.wisefox.ui.theme.*
 
-private val GastosColor = Color(0xFFE06030)
-private val IngresosColor = Color(0xFF4A9E6A)
+private val expensesColor = Color(0xFFE06030)
+private val earningsColor = Color(0xFF4A9E6A)
 
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -59,7 +58,8 @@ fun HomeScreen(navController: NavController) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Welcome, User!",
+                text = stringResource(R.string.welcome) + " " + "User!",
+                fontSize = 30.sp,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = WiseFoxOrangeDark
@@ -68,7 +68,7 @@ fun HomeScreen(navController: NavController) {
             Image(
                 painter = painterResource(id = R.drawable.ic_wisefox_icon),
                 contentDescription = null,
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(100.dp)
             )
         }
 
@@ -84,14 +84,14 @@ fun HomeScreen(navController: NavController) {
                 iconRes = R.drawable.ic_earnings,
                 label = stringResource(R.string.earnings),
                 value = "1067€",
-                valueColor = IngresosColor
+                valueColor = earningsColor
             )
             StatisticCard(
                 modifier = Modifier.weight(1f),
                 iconRes = R.drawable.ic_expenses,
                 label = stringResource(R.string.expenses),
                 value = "67€",
-                valueColor = GastosColor
+                valueColor = expensesColor
             )
         }
 
@@ -104,15 +104,15 @@ fun HomeScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
+                Image(
                     painter = painterResource(id = R.drawable.ic_ledger),
                     contentDescription = null,
-                    tint = WiseFoxOrange,
                     modifier = Modifier.size(28.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "LEDGERS",
+                    text = stringResource(R.string.ledgers_capital),
+                    fontSize = 20.sp,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = WiseFoxOrangeDark
@@ -121,7 +121,8 @@ fun HomeScreen(navController: NavController) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Solo/Shared",
+                    text = stringResource(R.string.solo_shared),
+                    fontSize = 17.sp,
                     style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -139,42 +140,46 @@ fun HomeScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // ── Gastos / Ingresos legend ─────────────────────────
+        // ── expenses / earnings legend ─────────────────────────
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "—",
+                    text = stringResource(R.string.bar),
+                    fontSize = 14.sp,
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = GastosColor
+                        color = expensesColor
                     )
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "gastos",
+                    text = stringResource(R.string.expenses),
+                    fontSize = 14.sp,
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = GastosColor
+                        color = expensesColor
                     )
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "-",
+                    text = stringResource(R.string.bar),
+                    fontSize = 14.sp,
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = IngresosColor
+                        color = earningsColor
                     )
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "ingresos",
+                    text = stringResource(R.string.earnings),
+                    fontSize = 14.sp,
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = IngresosColor
+                        color = earningsColor
                     )
                 )
             }
@@ -183,17 +188,18 @@ fun HomeScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(10.dp))
 
         // ── Ledger Items ─────────────────────────────────────
-        LedgerItem(label = "MY OWN LEDGER", gastos = 555f, ingresos = 700f)
+        LedgerItem(label = "MY OWN LEDGER", expenses = 555f, earnings = 700f)
         Spacer(modifier = Modifier.height(10.dp))
-        LedgerItem(label = "SCHOOL LEDGER", gastos = 23f, ingresos = 33f)
+        LedgerItem(label = "SCHOOL LEDGER", expenses = 23f, earnings = 33f)
         Spacer(modifier = Modifier.height(10.dp))
-        LedgerItem(label = "FOOD LEDGER", gastos = 106f, ingresos = 133f)
+        LedgerItem(label = "FOOD LEDGER", expenses = 106f, earnings = 133f)
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // ── Quick Advice ─────────────────────────────────────
         Text(
-            text = "Quick Advice",
+            text = stringResource(R.string.quick_advice),
+            fontSize = 20.sp,
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold,
                 color = WiseFoxOrangeDark
@@ -234,16 +240,18 @@ fun StatisticCard(
                     painter = painterResource(id = iconRes),
                     contentDescription = null,
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(30.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = label,
+                    fontSize = 17.sp,
                     style = MaterialTheme.typography.labelMedium.copy(color = TextSecondary)
                 )
             }
             Text(
                 text = value,
+                fontSize = 25.sp,
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = valueColor
@@ -256,13 +264,13 @@ fun StatisticCard(
 @Composable
 fun LedgerItem(
     label: String,
-    gastos: Float,
-    ingresos: Float
+    expenses: Float,
+    earnings: Float
 ) {
     // Both bars share the same scale — the larger value fills 100%
-    val maxValue = maxOf(gastos, ingresos)
-    val gastosProgress = (gastos / maxValue).coerceIn(0f, 1f)
-    val ingresosProgress = (ingresos / maxValue).coerceIn(0f, 1f)
+    val maxValue = maxOf(expenses, earnings)
+    val expensesProgress = (expenses / maxValue).coerceIn(0f, 1f)
+    val earningsProgress = (earnings / maxValue).coerceIn(0f, 1f)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -272,6 +280,7 @@ fun LedgerItem(
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
             Text(
                 text = label,
+                fontSize = 14.sp,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = TextSecondary
@@ -279,53 +288,55 @@ fun LedgerItem(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Gastos bar
+            // expenses bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 LinearProgressIndicator(
-                    progress = { gastosProgress },
+                    progress = { expensesProgress },
                     modifier = Modifier
                         .weight(1f)
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = GastosColor,
-                    trackColor = GastosColor.copy(alpha = 0.18f)
+                    color = expensesColor,
+                    trackColor = expensesColor.copy(alpha = 0.18f)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "${gastos.toInt()}€",
+                    text = "${expenses.toInt()}€",
+                    fontSize = 13.sp,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = GastosColor
+                        color = expensesColor
                     ),
                     modifier = Modifier.width(44.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Ingresos bar
+            // earnings bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 LinearProgressIndicator(
-                    progress = { ingresosProgress },
+                    progress = { earningsProgress },
                     modifier = Modifier
                         .weight(1f)
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = IngresosColor,
-                    trackColor = IngresosColor.copy(alpha = 0.15f)
+                    color = earningsColor,
+                    trackColor = earningsColor.copy(alpha = 0.15f)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "${ingresos.toInt()}€",
+                    text = "${earnings.toInt()}€",
+                    fontSize = 13.sp,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = IngresosColor
+                        color = earningsColor
                     ),
                     modifier = Modifier.width(44.dp)
                 )
@@ -354,12 +365,13 @@ fun QuickAdviceCard(iconRes: Int, message: String) {
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = WiseFoxOrangeDark)) {
-                        append("Smart Tip: ")
+                        append(stringResource(R.string.smart_tip))
                     }
                     withStyle(SpanStyle(color = TextSecondary)) {
                         append(message)
                     }
                 },
+                fontSize = 15.sp,
                 style = MaterialTheme.typography.bodySmall,
                 lineHeight = 18.sp
             )

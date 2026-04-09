@@ -18,6 +18,12 @@
     <string name="btn_login_google">Google Login</string>
     <string name="earnings">Earnings</string>
     <string name="expenses">Expenses</string>
+    <string name="welcome">Welcome,</string>
+    <string name="ledgers_capital">LEDGERS</string>
+    <string name="bar">-</string>
+    <string name="smart_tip">Smart Tip:</string>
+    <string name="solo_shared">Solo/Shared</string>
+    <string name="quick_advice">Quick Advice</string>
 
     <!-- Spanish -->
 
