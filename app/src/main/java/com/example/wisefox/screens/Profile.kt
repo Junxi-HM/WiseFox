@@ -63,7 +63,7 @@ fun ProfileScreen(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = stringResource(R.string.welcome).uppercase() + "!",
+                    text = stringResource(R.string.welcome).uppercase() + " User!",
                     fontSize = 20.sp,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.ExtraBold,
@@ -132,7 +132,7 @@ fun ProfileScreen(navController: NavController) {
 
         // ── Account Preferences section ──────────────────────
         Text(
-            text = "ACCOUNT PREFERENCES",
+            text = stringResource(R.string.account_preferences_capital),
             fontSize = 13.sp,
             modifier = Modifier
                 .fillMaxWidth()
@@ -164,14 +164,14 @@ fun ProfileScreen(navController: NavController) {
                 // ── Shared Ledgers row ──────────────────────
                 PreferenceArrowRow(
                     iconRes = R.drawable.ic_shared,
-                    label = "SHARED LEDGERS",
+                    label = stringResource(R.string.shared_ledgers_capital),
                     onClick = { /* TODO: navigate */ }
                 )
 
                 // ── Security row ────────────────────────────
                 PreferenceArrowRow(
                     iconRes = R.drawable.ic_security,
-                    label = "SECURITY",
+                    label = stringResource(R.string.security_capital),
                     onClick = { /* TODO: navigate */ }
                 )
             }
@@ -207,7 +207,7 @@ private fun LanguagePreferenceRow() {
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "LANGUAGE",
+                text = stringResource(R.string.language_capital),
                 fontSize = 14.sp,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
@@ -270,7 +270,7 @@ private fun NotificationsRow() {
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "NOTIFICATIONS",
+                text = stringResource(R.string.notification_capital),
                 fontSize = 14.sp,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,

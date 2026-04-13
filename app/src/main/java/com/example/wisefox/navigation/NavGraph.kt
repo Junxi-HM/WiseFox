@@ -1,11 +1,20 @@
 package com.example.wisefox.navigation
 
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.example.wisefox.screens.LoginScreen
+import com.example.wisefox.screens.common.WiseFoxLayout
+
+// Placeholder composables – replace with real screen content
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.wisefox.screens.AIScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -96,10 +105,10 @@ fun WiseFoxNavGraph(navController: NavHostController) {
             }
         }
 
-        // ── Ledger (AI) ───────────────────────────────────────────────────────
-        composable(Screen.Ledger.route) {
+        // ── Ledger ────────────────────────────────────────────────────────────
+        composable(Screen.AI.route) {
             WiseFoxLayout(navController = navController) {
-                PlaceholderScreen("AI")
+                AIScreen(navController)
             }
         }
 

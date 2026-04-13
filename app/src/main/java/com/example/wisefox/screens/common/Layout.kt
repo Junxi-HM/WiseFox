@@ -34,7 +34,7 @@ data class BottomNavItem(
 val bottomNavItems = listOf(
     BottomNavItem(Screen.Home.route, R.string.nav_home, R.drawable.ic_home),
     BottomNavItem(Screen.Transactions.route, R.string.nav_transactions, R.drawable.ic_statistics),
-    BottomNavItem(Screen.Ledger.route, R.string.nav_ledger, R.drawable.ic_ai),
+    BottomNavItem(Screen.AI.route, R.string.nav_ai, R.drawable.ic_ai),
     BottomNavItem(Screen.Profile.route, R.string.nav_profile, R.drawable.ic_profile),
 )
 
