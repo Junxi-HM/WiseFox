@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import com.example.wisefox.screens.HomeScreen
 import com.example.wisefox.ui.theme.TextWhite
 
+import com.example.wisefox.screens.ProfileScreen
+
 @Composable
 fun WiseFoxNavGraph(navController: NavHostController) {
     NavHost(
@@ -61,7 +63,7 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         // ── Profile ───────────────────────────────────────────────────────────
         composable(Screen.Profile.route) {
             WiseFoxLayout(navController = navController) {
-                PlaceholderScreen("Profile")
+                ProfileScreen(navController)
             }
         }
     }
