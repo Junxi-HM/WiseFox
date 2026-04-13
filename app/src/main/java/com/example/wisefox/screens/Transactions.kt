@@ -116,7 +116,7 @@ fun TransactionsScreen(navController: NavController) {
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Añadir transacción",
+                    contentDescription = stringResource(R.string.add_transaction),
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -143,13 +143,13 @@ private fun TransactionTabBar(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             TabPill(
-                text = "Transactions",
+                text = stringResource(R.string.transactions),
                 selected = activeTab == TransactionTab.TRANSACTIONS,
                 modifier = Modifier.weight(1f),
                 onClick = { onTabSelected(TransactionTab.TRANSACTIONS) }
             )
             TabPill(
-                text = "Statistics",
+                text = stringResource(R.string.statistics),
                 selected = activeTab == TransactionTab.STATISTICS,
                 modifier = Modifier.weight(1f),
                 onClick = { onTabSelected(TransactionTab.STATISTICS) }
