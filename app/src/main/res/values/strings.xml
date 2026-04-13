@@ -24,6 +24,12 @@
     <string name="smart_tip">Smart Tip:</string>
     <string name="solo_shared">Solo/Shared</string>
     <string name="quick_advice">Quick Advice</string>
+    <string name="solo_capital">SOLO</string>
+    <string name="shared_capital">SHARED</string>
+    <string name="from_capital">FROM</string>
+    <string name="to_capital">TO</string>
+    <string name="filter_by_ledger">Filter by Ledger</string>
+    <string name="filter_by_category">Filter by Category</string>
 
     <!-- Spanish -->
 

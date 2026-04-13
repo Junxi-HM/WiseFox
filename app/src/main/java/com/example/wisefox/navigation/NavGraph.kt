@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.wisefox.screens.HomeScreen
+import com.example.wisefox.screens.TransactionsScreen
 import com.example.wisefox.ui.theme.TextWhite
 
 import com.example.wisefox.screens.ProfileScreen
@@ -49,14 +50,14 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         // ── Transactions ──────────────────────────────────────────────────────
         composable(Screen.Transactions.route) {
             WiseFoxLayout(navController = navController) {
-                PlaceholderScreen("Transactions")
+                TransactionsScreen(navController)
             }
         }
 
         // ── Ledger ────────────────────────────────────────────────────────────
         composable(Screen.Ledger.route) {
             WiseFoxLayout(navController = navController) {
-                PlaceholderScreen("Ledger")
+                PlaceholderScreen("AI")
             }
         }
 

@@ -2,9 +2,11 @@ package com.example.wisefox.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,8 +19,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,6 +47,7 @@ private val earningsColor = Color(0xFF4A9E6A)
 
 @Composable
 fun HomeScreen(navController: NavController) {
+    var isShared by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -119,23 +121,11 @@ fun HomeScreen(navController: NavController) {
                     )
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(R.string.solo_shared),
-                    fontSize = 17.sp,
-                    style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                var isShared by remember { mutableStateOf(true) }
-                Switch(
-                    checked = isShared,
-                    onCheckedChange = { isShared = it },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = WiseFoxOrange
-                    )
-                )
-            }
+
+            SoloSharedSelector(
+                isShared = isShared,
+                onToggle = { isShared = it }
+            )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -374,6 +364,60 @@ fun QuickAdviceCard(iconRes: Int, message: String) {
                 fontSize = 15.sp,
                 style = MaterialTheme.typography.bodySmall,
                 lineHeight = 18.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun SoloSharedSelector(
+    isShared: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(50),
+        colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
+        modifier = Modifier.height(32.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SelectorOption(
+                text = stringResource(R.string.solo_capital),
+                isSelected = !isShared,
+                onClick = { onToggle(false) }
+            )
+            SelectorOption(
+                text = stringResource(R.string.shared_capital),
+                isSelected = isShared,
+                onClick = { onToggle(true) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectorOption(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(50),
+        color = if (isSelected) WiseFoxOrange else Color.Transparent,
+        modifier = Modifier.fillMaxHeight()
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.White else Color.Black
             )
         }
     }
