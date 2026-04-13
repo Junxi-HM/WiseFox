@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.wisefox.screens.AIScreen
 import com.example.wisefox.screens.HomeScreen
 import com.example.wisefox.screens.TransactionsScreen
 import com.example.wisefox.ui.theme.TextWhite
@@ -55,9 +56,9 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         }
 
         // ── Ledger ────────────────────────────────────────────────────────────
-        composable(Screen.Ledger.route) {
+        composable(Screen.AI.route) {
             WiseFoxLayout(navController = navController) {
-                PlaceholderScreen("AI")
+                AIScreen(navController)
             }
         }
 

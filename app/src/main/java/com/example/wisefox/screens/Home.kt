@@ -60,7 +60,7 @@ fun HomeScreen(navController: NavController) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.welcome) + " " + "User!",
+                text = stringResource(R.string.welcome) + " User!",
                 fontSize = 30.sp,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,

@@ -11,7 +11,7 @@
     <string name="forgot_password">Forgot password?</string>
     <string name="nav_home">Home</string>
     <string name="nav_transactions">Transactions</string>
-    <string name="nav_ledger">Ledger</string>
+    <string name="nav_ai">AI</string>
     <string name="nav_profile">Profile</string>
     <string name="loading">Loading…</string>
     <string name="error_generic">Something went wrong</string>
@@ -30,6 +30,14 @@
     <string name="to_capital">TO</string>
     <string name="filter_by_ledger">Filter by Ledger</string>
     <string name="filter_by_category">Filter by Category</string>
+    <string name="add_transaction">Add transaction</string>
+    <string name="transactions">Transactions</string>
+    <string name="statistics">Statistics</string>
+    <string name="language_capital">LANGUAGE</string>
+    <string name="notification_capital">NOTIFICATIONS</string>
+    <string name="shared_ledgers_capital">SHARED LEDGERS</string>
+    <string name="security_capital">SECURITY</string>
+    <string name="account_preferences_capital">ACCOUNT PREFERENCES</string>
 
     <!-- Spanish -->
 
