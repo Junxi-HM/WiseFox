@@ -1,19 +1,17 @@
 package com.example.wisefox.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,14 +20,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,8 +33,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wisefox.R
 import com.example.wisefox.ui.theme.*
-import com.example.wisefox.viewmodels.LoginViewModel
 import com.example.wisefox.viewmodels.LoginUiState
+import com.example.wisefox.viewmodels.LoginViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,53 +48,92 @@ fun LoginScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // Trigger navigation on success
+    // ── Google Sign-In launcher ───────────────────────────────────────────────
+    val googleSignInClient = remember {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            // !! 将下面的字符串替换为你在 Google Cloud Console 的 Web Client ID !!
+            .requestIdToken("427423059339-cmjgaq9je98kp8aggm4oeonstakaobu0.apps.googleusercontent.com")
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+
+    val googleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account?.idToken
+            if (idToken != null) {
+                viewModel.googleLogin(idToken)
+            } else {
+                // token 为空时静默失败，也可以给用户提示
+            }
+        } catch (e: ApiException) {
+            // 用户取消或错误，可以选择忽略或展示错误
+        }
+    }
+
+    // ── 导航副作用 ────────────────────────────────────────────────────────────
     LaunchedEffect(uiState) {
         if (uiState is LoginUiState.Success) onLoginSuccess()
     }
 
-    // ── Full-screen gradient background ──────────────────────────────────────
+    // ── 验证码弹窗 ────────────────────────────────────────────────────────────
+    val needVerifyState = uiState as? LoginUiState.NeedVerifyCode
+    if (needVerifyState != null) {
+        val verifyError = remember { mutableStateOf<String?>(null) }
+        // 监听 ApiError 以便把错误显示在弹窗内
+        LaunchedEffect(uiState) {
+            if (uiState is LoginUiState.ApiError) {
+                verifyError.value = (uiState as LoginUiState.ApiError).message
+            }
+        }
+        VerifyCodeDialog(
+            email         = needVerifyState.email,
+            isLoading     = false,
+            errorMessage  = verifyError.value,
+            onConfirm     = { code -> viewModel.verifyCode(needVerifyState.email, code) },
+            onDismiss     = { viewModel.resetState() }
+        )
+    }
+
+    // ── 全屏背景 ──────────────────────────────────────────────────────────────
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-//                        Color(0xFFFFF8E8),
-//                        Color(0xFFFFF0CC),
-//                        Color(0xFFFFE8B0)
-                        Color(0xFFFEDD7B),
-                        Color(0xFFFFE288),
-                        Color(0xFFFFE490),
-                        Color(0xFFFFE9A7),
-                        Color(0xFFFFEEB9)
+                        Color(0xFFFEDD7B), Color(0xFFFFE288),
+                        Color(0xFFFFE490), Color(0xFFFFE9A7), Color(0xFFFFEEB9)
                     )
                 )
             ),
         contentAlignment = Alignment.Center
     ) {
-
-        // ── Outer box to allow mascot to overlap card ─────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
         ) {
 
-            // ── Login Card ────────────────────────────────────────────────────
+            // ── 登录卡片 ──────────────────────────────────────────────────────
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 36.dp)             // leave room for mascot
+                    .padding(top = 36.dp)
                     .shadow(
                         elevation = 20.dp,
                         shape = RoundedCornerShape(32.dp),
                         ambientColor = WiseFoxOrangeDark.copy(alpha = 0.35f),
-                        spotColor = WiseFoxOrangeDark.copy(alpha = 0.35f)
+                        spotColor    = WiseFoxOrangeDark.copy(alpha = 0.35f)
                     ),
-                shape = RoundedCornerShape(32.dp),
+                shape  = RoundedCornerShape(32.dp),
                 colors = CardDefaults.cardColors(containerColor = WiseFoxLoginCardBg)
             ) {
                 Column(
@@ -105,17 +143,13 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
 
-                    // Title
                     Text(
                         text = stringResource(R.string.login_title),
                         fontSize = 30.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextWhite
                     )
-
                     Spacer(modifier = Modifier.height(4.dp))
-
-                    // Subtitle
                     Text(
                         text = stringResource(R.string.login_subtitle),
                         fontSize = 17.sp,
@@ -124,22 +158,17 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    // ── Email field ───────────────────────────────────────────
+                    // ── Email ──────────────────────────────────────────────────
                     OutlinedTextField(
                         value = viewModel.email,
                         onValueChange = { viewModel.email = it },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.hint_email), fontSize = 20.sp) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.Email, contentDescription = null,
-                                tint = TextWhite
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Filled.Email, null, tint = TextWhite) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next
+                            imeAction    = ImeAction.Next
                         ),
                         keyboardActions = KeyboardActions(
                             onNext = { focusManager.moveFocus(FocusDirection.Down) }
@@ -158,41 +187,32 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // ── Password field ────────────────────────────────────────
+                    // ── Password ───────────────────────────────────────────────
                     OutlinedTextField(
                         value = viewModel.password,
                         onValueChange = { viewModel.password = it },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.hint_password), fontSize = 20.sp) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.Lock, contentDescription = null,
-                                tint = TextWhite
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Filled.Lock, null, tint = TextWhite) },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
-                                    imageVector = if (passwordVisible)
-                                        Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                    imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                                     contentDescription = null,
                                     tint = TextWhite.copy(alpha = 0.7f)
                                 )
                             }
                         },
-                        visualTransformation = if (passwordVisible)
-                            VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
+                            imeAction    = ImeAction.Done
                         ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                viewModel.login()
-                            }
-                        ),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            viewModel.login()
+                        }),
                         isError = uiState is LoginUiState.PasswordError,
                         supportingText = {
                             if (uiState is LoginUiState.PasswordError)
@@ -212,9 +232,15 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(top = 4.dp, bottom = 28.dp)
                     ) {
-                        // ── Google Login ───────────────────────────────────────
+                        // ── Google 登录按钮 ────────────────────────────────────
                         Button(
-                            onClick = { /*TODO*/ },
+                            onClick = {
+                                // 每次点击前强制退出，避免缓存的账号干扰
+                                googleSignInClient.signOut().addOnCompleteListener {
+                                    googleLauncher.launch(googleSignInClient.signInIntent)
+                                }
+                            },
+                            enabled = uiState !is LoginUiState.Loading,
                             modifier = Modifier
                                 .wrapContentWidth()
                                 .height(35.dp),
@@ -222,10 +248,10 @@ fun LoginScreen(
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White,
-                                contentColor = Color(0xFF1f1f1f),
+                                contentColor   = Color(0xFF1f1f1f)
                             ),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
-                            border = BorderStroke(1.dp, Color(0xFF747775)),
+                            border = BorderStroke(1.dp, Color(0xFF747775))
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -234,8 +260,7 @@ fun LoginScreen(
                                 Image(
                                     painter = painterResource(id = R.drawable.ic_google_logo),
                                     contentDescription = "Google Logo",
-                                    modifier = Modifier
-                                        .size(23.dp)
+                                    modifier = Modifier.size(23.dp)
                                 )
                                 Text(
                                     text = stringResource(R.string.btn_login_google),
@@ -246,27 +271,26 @@ fun LoginScreen(
                             }
                         }
 
-                        // ── Forgot password ───────────────────────────────────────
+                        // 忘记密码
                         Text(
                             text = stringResource(R.string.forgot_password),
                             fontSize = 17.sp,
                             color = TextWhite.copy(alpha = 0.9f),
-                            modifier = Modifier
-                                .clickable { /* TODO: forgot password */ }
+                            modifier = Modifier.clickable { /* TODO */ }
                         )
                     }
 
-                    // ── Login button ──────────────────────────────────────────
+                    // ── 登录按钮 ───────────────────────────────────────────────
                     Button(
                         onClick = { viewModel.login() },
                         enabled = uiState !is LoginUiState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(60.dp),
-                        shape = RoundedCornerShape(24.dp),
+                        shape  = RoundedCornerShape(24.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = WiseFoxOrangeDark,
-                            contentColor = TextWhite
+                            contentColor   = TextWhite
                         )
                     ) {
                         if (uiState is LoginUiState.Loading) {
@@ -286,7 +310,6 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // ── Register link ─────────────────────────────────────────
                     Text(
                         text = stringResource(R.string.btn_register),
                         fontSize = 17.sp,
@@ -297,34 +320,54 @@ fun LoginScreen(
                             .clickable { onNavigateToRegister() }
                     )
 
-                    // ── API error snackbar-style ──────────────────────────────
-                    if (uiState is LoginUiState.ApiError) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = (uiState as LoginUiState.ApiError).message,
-                            color = Color(0xFFFFE4C0),
-                            fontSize = 17.sp,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
+                    // ── 错误 / 提示信息 ────────────────────────────────────────
+                    when (uiState) {
+                        is LoginUiState.ApiError -> {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = (uiState as LoginUiState.ApiError).message,
+                                color = Color(0xFFFFE4C0),
+                                fontSize = 17.sp,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        is LoginUiState.SuggestGoogle -> {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape  = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color.White.copy(alpha = 0.18f)
+                                )
+                            ) {
+                                Text(
+                                    text = "No account found. Please sign in with Google to register.",
+                                    color = TextWhite,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
+                        else -> {}
                     }
                 }
             }
 
-            // ── Fox mascot – overlaps top-left corner of card ─────────────────
+            // ── Fox mascot ────────────────────────────────────────────────────
             Image(
                 painter = painterResource(id = R.drawable.ic_fox_mascot),
                 contentDescription = "WiseFox mascot",
                 modifier = Modifier
                     .size(100.dp)
                     .align(Alignment.TopStart)
-                    .offset(x = 25.dp, y = (-30).dp)          // slightly inside left edge
+                    .offset(x = 25.dp, y = (-30).dp)
             )
         }
     }
 }
 
-// ── Shared TextField color helper ─────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun wiseFoxTextFieldColors() = OutlinedTextFieldDefaults.colors(
