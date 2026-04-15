@@ -10,6 +10,14 @@ sealed class Screen(val route: String) {
     object AI       : Screen("ai")
     object Profile      : Screen("profile")
 
+    // 单账本详情页
+    object LedgerDetail : Screen("ledger_detail/{ledgerId}/{ledgerName}") {
+        fun createRoute(ledgerId: Long, ledgerName: String): String {
+            val encodedName = java.net.URLEncoder.encode(ledgerName, "UTF-8")
+            return "ledger_detail/$ledgerId/$encodedName"
+        }
+    }
+
     // Google 注册页，携带 googleToken 和 email 作为路由参数
     object GoogleRegister : Screen("google_register/{googleToken}/{email}") {
         fun createRoute(googleToken: String, email: String): String {

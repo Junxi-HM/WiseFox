@@ -1,5 +1,6 @@
 package com.example.wisefox.network
 
+import com.example.wisefox.utils.SessionManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -8,8 +9,6 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    // ── 修改为你的后端地址 ────────────────────────────────────────────────────
-    // 本地开发 Android 模拟器使用 10.0.2.2，真机用电脑的局域网 IP，生产环境用域名
     private const val BASE_URL = "http://10.0.2.2:8080/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -18,6 +17,18 @@ object RetrofitClient {
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
+        // ── 新增：自动附加 JWT token ──────────────────────────────
+        .addInterceptor { chain ->
+            val token = SessionManager.getToken()
+            val request = if (token != null) {
+                chain.request().newBuilder()
+                    .addHeader("Authorization", "Bearer $token")
+                    .build()
+            } else {
+                chain.request()
+            }
+            chain.proceed(request)
+        }
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()

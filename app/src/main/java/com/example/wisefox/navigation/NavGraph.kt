@@ -27,6 +27,7 @@ import com.example.wisefox.viewmodels.LoginViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import com.example.wisefox.screens.LedgerDetailScreen
 
 @Composable
 fun WiseFoxNavGraph(navController: NavHostController) {
@@ -103,6 +104,25 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         composable(Screen.AI.route) {
             WiseFoxLayout(navController = navController) {
                 AIScreen(navController)
+            }
+        }
+
+        // ── LedgerDetail ──────────────────────────────────────────────────────────
+        composable(
+            route = Screen.LedgerDetail.route,
+            arguments = listOf(
+                navArgument("ledgerId")   { type = NavType.LongType },
+                navArgument("ledgerName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val ledgerId   = backStackEntry.arguments?.getLong("ledgerId") ?: 0L
+            val ledgerName = backStackEntry.arguments?.getString("ledgerName") ?: ""
+            WiseFoxLayout(navController = navController) {
+                LedgerDetailScreen(
+                    ledgerId   = ledgerId,
+                    ledgerName = ledgerName,
+                    navController = navController
+                )
             }
         }
 
