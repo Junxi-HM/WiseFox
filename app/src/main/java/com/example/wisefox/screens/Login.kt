@@ -1,7 +1,5 @@
 package com.example.wisefox.screens
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,15 +27,20 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wisefox.R
 import com.example.wisefox.ui.theme.*
 import com.example.wisefox.viewmodels.LoginUiState
 import com.example.wisefox.viewmodels.LoginViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,32 +52,43 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // ── Google Sign-In launcher ───────────────────────────────────────────────
-    val googleSignInClient = remember {
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            // !! 将下面的字符串替换为你在 Google Cloud Console 的 Web Client ID !!
-            .requestIdToken("427423059339-cmjgaq9je98kp8aggm4oeonstakaobu0.apps.googleusercontent.com")
-            .requestEmail()
+    // ── Credential Manager ────────────────────────────────────────────────────
+    val credentialManager = remember { CredentialManager.create(context) }
+
+    // !! 替换为你在 Google Cloud Console 的 Web Client ID !!
+    val googleRequest = remember {
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId("427423059339-cmjgaq9je98kp8aggm4oeonstakaobu0.apps.googleusercontent.com")
+            .setAutoSelectEnabled(false)
             .build()
-        GoogleSignIn.getClient(context, gso)
+        GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
     }
 
-    val googleLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            val account = task.getResult(ApiException::class.java)
-            val idToken = account?.idToken
-            if (idToken != null) {
-                viewModel.googleLogin(idToken)
-            } else {
-                // token 为空时静默失败，也可以给用户提示
+    fun launchGoogleSignIn() {
+        scope.launch {
+            try {
+                val result = credentialManager.getCredential(
+                    request = googleRequest,
+                    context = context
+                )
+                val credential = result.credential
+                if (credential is CustomCredential &&
+                    credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                ) {
+                    val tokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                    viewModel.googleLogin(tokenCredential.idToken)
+                }
+            } catch (e: GetCredentialException) {
+                // 用户取消，静默处理
+            } catch (e: GoogleIdTokenParsingException) {
+                // token 解析失败，静默处理
             }
-        } catch (e: ApiException) {
-            // 用户取消或错误，可以选择忽略或展示错误
         }
     }
 
@@ -87,18 +101,17 @@ fun LoginScreen(
     val needVerifyState = uiState as? LoginUiState.NeedVerifyCode
     if (needVerifyState != null) {
         val verifyError = remember { mutableStateOf<String?>(null) }
-        // 监听 ApiError 以便把错误显示在弹窗内
         LaunchedEffect(uiState) {
             if (uiState is LoginUiState.ApiError) {
                 verifyError.value = (uiState as LoginUiState.ApiError).message
             }
         }
         VerifyCodeDialog(
-            email         = needVerifyState.email,
-            isLoading     = false,
-            errorMessage  = verifyError.value,
-            onConfirm     = { code -> viewModel.verifyCode(needVerifyState.email, code) },
-            onDismiss     = { viewModel.resetState() }
+            email        = needVerifyState.email,
+            isLoading    = false,
+            errorMessage = verifyError.value,
+            onConfirm    = { code -> viewModel.verifyCode(needVerifyState.email, code) },
+            onDismiss    = { viewModel.resetState() }
         )
     }
 
@@ -142,7 +155,6 @@ fun LoginScreen(
                         .padding(start = 28.dp, end = 28.dp, top = 28.dp, bottom = 30.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-
                     Text(
                         text = stringResource(R.string.login_title),
                         fontSize = 30.sp,
@@ -158,7 +170,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    // ── Email ──────────────────────────────────────────────────
+                    // ── Email ─────────────────────────────────────────────────
                     OutlinedTextField(
                         value = viewModel.email,
                         onValueChange = { viewModel.email = it },
@@ -187,7 +199,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // ── Password ───────────────────────────────────────────────
+                    // ── Password ──────────────────────────────────────────────
                     OutlinedTextField(
                         value = viewModel.password,
                         onValueChange = { viewModel.password = it },
@@ -234,12 +246,7 @@ fun LoginScreen(
                     ) {
                         // ── Google 登录按钮 ────────────────────────────────────
                         Button(
-                            onClick = {
-                                // 每次点击前强制退出，避免缓存的账号干扰
-                                googleSignInClient.signOut().addOnCompleteListener {
-                                    googleLauncher.launch(googleSignInClient.signInIntent)
-                                }
-                            },
+                            onClick = { launchGoogleSignIn() },
                             enabled = uiState !is LoginUiState.Loading,
                             modifier = Modifier
                                 .wrapContentWidth()
@@ -271,7 +278,6 @@ fun LoginScreen(
                             }
                         }
 
-                        // 忘记密码
                         Text(
                             text = stringResource(R.string.forgot_password),
                             fontSize = 17.sp,
@@ -320,7 +326,7 @@ fun LoginScreen(
                             .clickable { onNavigateToRegister() }
                     )
 
-                    // ── 错误 / 提示信息 ────────────────────────────────────────
+                    // ── 错误 / 提示 ────────────────────────────────────────────
                     when (uiState) {
                         is LoginUiState.ApiError -> {
                             Spacer(modifier = Modifier.height(12.dp))
