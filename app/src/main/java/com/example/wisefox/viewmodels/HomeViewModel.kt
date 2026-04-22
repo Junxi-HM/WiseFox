@@ -2,27 +2,31 @@ package com.example.wisefox.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wisefox.model.LedgerRequest
 import com.example.wisefox.model.LedgerResponse
-import com.example.wisefox.model.LedgerUiModel
-import com.example.wisefox.repository.LedgerRepository
+import com.example.wisefox.model.TransactionResponse
+import com.example.wisefox.network.LedgerApiService
+import com.example.wisefox.network.RetrofitClient
+import com.example.wisefox.network.TransactionApiService
 import com.example.wisefox.utils.SessionManager
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-// ── UI States ─────────────────────────────────────────────────────────────────
+// ── UI wrapper ────────────────────────────────────────────────────────────────
 
-sealed class HomeUiState {
-    object Loading : HomeUiState()
-    data class Success(val ledgers: List<LedgerUiModel>) : HomeUiState()
-    data class Error(val message: String) : HomeUiState()
-}
+data class LedgerUiModel(
+    val ledger: LedgerResponse,
+    val totalExpense: Double = 0.0,
+    val totalIncome: Double  = 0.0
+)
+
+// ── CRUD state ────────────────────────────────────────────────────────────────
 
 sealed class LedgerCrudState {
-    object Idle : LedgerCrudState()
+    object Idle    : LedgerCrudState()
     object Loading : LedgerCrudState()
     object Success : LedgerCrudState()
     data class Error(val message: String) : LedgerCrudState()
@@ -30,161 +34,144 @@ sealed class LedgerCrudState {
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class HomeViewModel(
-    private val repo: LedgerRepository = LedgerRepository()
-) : ViewModel() {
+class HomeViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
-    val uiState: StateFlow<HomeUiState> = _uiState
+    private val ledgerApi: LedgerApiService =
+        RetrofitClient.instance.create(LedgerApiService::class.java)
+    private val txApi: TransactionApiService =
+        RetrofitClient.instance.create(TransactionApiService::class.java)
 
-    // Resultado de operaciones create/update/delete
+    private val _soloLedgers   = MutableStateFlow<List<LedgerUiModel>>(emptyList())
+    private val _sharedLedgers = MutableStateFlow<List<LedgerUiModel>>(emptyList())
+    val soloLedgers:   StateFlow<List<LedgerUiModel>> = _soloLedgers
+    val sharedLedgers: StateFlow<List<LedgerUiModel>> = _sharedLedgers
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     private val _crudState = MutableStateFlow<LedgerCrudState>(LedgerCrudState.Idle)
     val crudState: StateFlow<LedgerCrudState> = _crudState
 
-    // true = Shared, false = Solo
-    private val _isShared = MutableStateFlow(false)
-    val isShared: StateFlow<Boolean> = _isShared
+    init { loadLedgers() }
 
-    private var allLedgerUiModels: List<LedgerUiModel> = emptyList()
-
-    init {
-        loadLedgers()
-    }
-
-    // ── READ ──────────────────────────────────────────────────────────────────
+    // ── Load ──────────────────────────────────────────────────────────────────
 
     fun loadLedgers() {
+        val userId = SessionManager.getUserId()
+        if (userId < 0) return
+
         viewModelScope.launch {
-            _uiState.value = HomeUiState.Loading
+            _isLoading.value = true
             try {
-                val userId = SessionManager.getUserId()
-                val ledgers: List<LedgerResponse> = repo.getLedgersByUser(userId)
+                val resp = ledgerApi.getLedgers(userId)
+                if (!resp.isSuccessful) { _isLoading.value = false; return@launch }
 
-                val uiModels: List<LedgerUiModel> = ledgers
-                    .map { ledger ->
-                        async {
-                            val transactions = try {
-                                repo.getTransactionsByLedger(ledger.id)
-                            } catch (e: Exception) {
-                                emptyList()
-                            }
-                            val totalExpenses = transactions
-                                .filter { it.type.uppercase() == "EXPENSE" }
-                                .sumOf { it.amount ?: 0.0 }
-                                .toFloat()
-                            val totalEarnings = transactions
-                                .filter { it.type.uppercase() == "INCOME" }
-                                .sumOf { it.amount ?: 0.0 }
-                                .toFloat()
-                            LedgerUiModel(
-                                id            = ledger.id,
-                                name          = ledger.name,
-                                currency      = ledger.currency,
-                                description   = ledger.description,
-                                ownerId       = ledger.ownerId,
-                                ownerUsername = ledger.ownerUsername,
-                                totalExpenses = totalExpenses,
-                                totalEarnings = totalEarnings
-                            )
-                        }
-                    }
-                    .awaitAll()
+                val all = resp.body() ?: emptyList()
+                val solo   = all.filter { it.ownerId == userId }
+                val shared = all.filter { it.ownerId != userId }
 
-                allLedgerUiModels = uiModels
-                applyFilter()
-            } catch (e: Exception) {
-                _uiState.value = HomeUiState.Error(e.message ?: "Unknown error")
-            }
+                // Load transactions in parallel for totals
+                val soloUi:   List<LedgerUiModel> = solo.map { ledger ->
+                    viewModelScope.async { loadUiModel(ledger) }
+                }.awaitAll()
+
+                val sharedUi: List<LedgerUiModel> = shared.map { ledger ->
+                    viewModelScope.async { loadUiModel(ledger) }
+                }.awaitAll()
+
+                _soloLedgers.value   = soloUi
+                _sharedLedgers.value = sharedUi
+            } catch (_: Exception) { }
+            _isLoading.value = false
         }
     }
 
-    // ── CREATE ────────────────────────────────────────────────────────────────
+    private suspend fun loadUiModel(ledger: LedgerResponse): LedgerUiModel {
+        return try {
+            val r = txApi.getTransactions(ledger.id)
+            val txList: List<TransactionResponse> =
+                if (r.isSuccessful) r.body() ?: emptyList() else emptyList()
+            LedgerUiModel(
+                ledger       = ledger,
+                totalExpense = txList.filter { it.type?.name == "EXPENSE" }.sumOf { it.amount ?: 0.0 },
+                totalIncome  = txList.filter { it.type?.name == "INCOME"  }.sumOf { it.amount ?: 0.0 }
+            )
+        } catch (_: Exception) {
+            LedgerUiModel(ledger = ledger)
+        }
+    }
 
-    fun createLedger(name: String, currency: String, description: String?) {
+    // ── Create ────────────────────────────────────────────────────────────────
+
+    fun createLedger(name: String, currency: String, description: String) {
+        val userId = SessionManager.getUserId()
+        if (userId < 0) return
+
+        _crudState.value = LedgerCrudState.Loading
         viewModelScope.launch {
-            _crudState.value = LedgerCrudState.Loading
             try {
-                val request = LedgerRequest(
-                    name        = name.trim(),
-                    currency    = currency.trim(),
-                    description = description?.trim()?.ifBlank { null },
-                    userId      = SessionManager.getUserId()
+                val body: Map<String, Any> = mapOf(
+                    "name"        to name,
+                    "currency"    to currency,
+                    "description" to description,
+                    "userId"      to userId
                 )
-                repo.createLedger(request)
-                _crudState.value = LedgerCrudState.Success
-                loadLedgers()
+                val resp = ledgerApi.createLedger(body)
+                if (resp.isSuccessful) {
+                    _crudState.value = LedgerCrudState.Success
+                    loadLedgers()
+                } else {
+                    _crudState.value = LedgerCrudState.Error("Failed (${resp.code()})")
+                }
             } catch (e: Exception) {
-                _crudState.value = LedgerCrudState.Error(e.message ?: "Failed to create ledger")
+                _crudState.value = LedgerCrudState.Error(e.message ?: "Error")
             }
         }
     }
 
-    // ── UPDATE ────────────────────────────────────────────────────────────────
+    // ── Update ────────────────────────────────────────────────────────────────
 
-    fun updateLedger(id: Long, name: String, currency: String, description: String?) {
+    fun updateLedger(ledgerId: Long, name: String, currency: String, description: String) {
+        _crudState.value = LedgerCrudState.Loading
         viewModelScope.launch {
-            _crudState.value = LedgerCrudState.Loading
             try {
-                val request = LedgerRequest(
-                    name        = name.trim(),
-                    currency    = currency.trim(),
-                    description = description?.trim()?.ifBlank { null },
-                    userId      = SessionManager.getUserId()
+                val body: Map<String, Any> = mapOf(
+                    "name"        to name,
+                    "currency"    to currency,
+                    "description" to description,
+                    "userId"      to SessionManager.getUserId()
                 )
-                repo.updateLedger(id, request)
-                _crudState.value = LedgerCrudState.Success
-                loadLedgers()
+                val resp = ledgerApi.updateLedger(ledgerId, body)
+                if (resp.isSuccessful) {
+                    _crudState.value = LedgerCrudState.Success
+                    loadLedgers()
+                } else {
+                    _crudState.value = LedgerCrudState.Error("Failed (${resp.code()})")
+                }
             } catch (e: Exception) {
-                _crudState.value = LedgerCrudState.Error(e.message ?: "Failed to update ledger")
+                _crudState.value = LedgerCrudState.Error(e.message ?: "Error")
             }
         }
     }
 
-    // ── DELETE ────────────────────────────────────────────────────────────────
+    // ── Delete ────────────────────────────────────────────────────────────────
 
-    fun deleteLedger(id: Long) {
+    fun deleteLedger(ledgerId: Long) {
+        _crudState.value = LedgerCrudState.Loading
         viewModelScope.launch {
-            _crudState.value = LedgerCrudState.Loading
             try {
-                repo.deleteLedger(id)
-                _crudState.value = LedgerCrudState.Success
-                loadLedgers()
+                val resp = ledgerApi.deleteLedger(ledgerId)
+                if (resp.isSuccessful) {
+                    _crudState.value = LedgerCrudState.Success
+                    loadLedgers()
+                } else {
+                    _crudState.value = LedgerCrudState.Error("Failed (${resp.code()})")
+                }
             } catch (e: Exception) {
-                _crudState.value = LedgerCrudState.Error(e.message ?: "Failed to delete ledger")
+                _crudState.value = LedgerCrudState.Error(e.message ?: "Error")
             }
         }
     }
 
-    // ── Filter & helpers ──────────────────────────────────────────────────────
-
-    fun setSharedFilter(shared: Boolean) {
-        _isShared.value = shared
-        applyFilter()
-    }
-
-    fun resetCrudState() {
-        _crudState.value = LedgerCrudState.Idle
-    }
-
-    fun getTotalExpenses(ledgers: List<LedgerUiModel>): String {
-        if (ledgers.isEmpty()) return "—"
-        val total = ledgers.sumOf { it.totalExpenses.toDouble() }.toFloat()
-        return if (total == 0f) "—" else "${total.toInt()}€"
-    }
-
-    fun getTotalEarnings(ledgers: List<LedgerUiModel>): String {
-        if (ledgers.isEmpty()) return "—"
-        val total = ledgers.sumOf { it.totalEarnings.toDouble() }.toFloat()
-        return if (total == 0f) "—" else "${total.toInt()}€"
-    }
-
-    private fun applyFilter() {
-        val currentUserId = SessionManager.getUserId()
-        val filtered = if (_isShared.value) {
-            allLedgerUiModels.filter { it.ownerId != currentUserId }
-        } else {
-            allLedgerUiModels.filter { it.ownerId == currentUserId }
-        }
-        _uiState.value = HomeUiState.Success(filtered)
-    }
+    fun resetCrudState() { _crudState.value = LedgerCrudState.Idle }
 }

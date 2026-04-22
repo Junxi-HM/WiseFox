@@ -11,8 +11,8 @@ package com.example.wisefox.model
 data class LedgerResponse(
     val id: Long,
     val name: String,
-    val currency: String,
+    val currency: String?,
     val description: String?,
-    val ownerId: Long,
-    val ownerUsername: String
+    val ownerId: Long?,
+    val ownerUsername: String?
 )

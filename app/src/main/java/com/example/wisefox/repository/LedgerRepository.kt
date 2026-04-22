@@ -1,6 +1,5 @@
 package com.example.wisefox.repository
 
-import com.example.wisefox.model.LedgerRequest
 import com.example.wisefox.model.LedgerResponse
 import com.example.wisefox.model.TransactionResponse
 import com.example.wisefox.network.LedgerApiService
@@ -9,43 +8,37 @@ import com.example.wisefox.network.TransactionApiService
 
 class LedgerRepository {
 
-    private val ledgerApi = RetrofitClient.instance.create(LedgerApiService::class.java)
-    private val transactionApi = RetrofitClient.instance.create(TransactionApiService::class.java)
+    private val ledgerApi: LedgerApiService =
+        RetrofitClient.instance.create(LedgerApiService::class.java)
 
-    // ── READ ──────────────────────────────────────────────────────────────────
+    private val txApi: TransactionApiService =
+        RetrofitClient.instance.create(TransactionApiService::class.java)
+
+    // ── Ledgers ───────────────────────────────────────────────────────────────
 
     suspend fun getLedgersByUser(userId: Long): List<LedgerResponse> {
-        val response = ledgerApi.getLedgersByUser(userId)
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw Exception("Failed to load ledgers: ${response.code()}")
+        val resp = ledgerApi.getLedgers(userId)
+        return if (resp.isSuccessful) resp.body() ?: emptyList() else emptyList()
     }
+
+    suspend fun getLedgerById(ledgerId: Long): LedgerResponse? {
+        val resp = ledgerApi.getLedgerById(ledgerId)
+        return if (resp.isSuccessful) resp.body() else null
+    }
+
+    // ── Transactions ──────────────────────────────────────────────────────────
 
     suspend fun getTransactionsByLedger(ledgerId: Long): List<TransactionResponse> {
-        val response = transactionApi.getTransactionsByLedger(ledgerId)
-        if (response.isSuccessful) return response.body() ?: emptyList()
-        throw Exception("Failed to load transactions: ${response.code()}")
+        val resp = txApi.getTransactions(ledgerId)
+        return if (resp.isSuccessful) resp.body() ?: emptyList() else emptyList()
     }
 
-    // ── CREATE ────────────────────────────────────────────────────────────────
-
-    suspend fun createLedger(request: LedgerRequest): LedgerResponse {
-        val response = ledgerApi.createLedger(request)
-        if (response.isSuccessful) return response.body()!!
-        throw Exception("Failed to create ledger: ${response.code()}")
+    suspend fun createTransaction(body: Map<String, Any>): TransactionResponse? {
+        val resp = txApi.createTransaction(body)
+        return if (resp.isSuccessful) resp.body() else null
     }
 
-    // ── UPDATE ────────────────────────────────────────────────────────────────
-
-    suspend fun updateLedger(id: Long, request: LedgerRequest): LedgerResponse {
-        val response = ledgerApi.updateLedger(id, request)
-        if (response.isSuccessful) return response.body()!!
-        throw Exception("Failed to update ledger: ${response.code()}")
-    }
-
-    // ── DELETE ────────────────────────────────────────────────────────────────
-
-    suspend fun deleteLedger(id: Long) {
-        val response = ledgerApi.deleteLedger(id)
-        if (!response.isSuccessful) throw Exception("Failed to delete ledger: ${response.code()}")
+    suspend fun deleteTransaction(txId: Long) {
+        txApi.deleteTransaction(txId)
     }
 }

@@ -10,6 +10,7 @@ import com.example.wisefox.screens.common.WiseFoxLayout
 // Placeholder composables – replace with real screen content
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,8 +28,16 @@ import com.example.wisefox.viewmodels.LoginViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.example.wisefox.screens.LedgerDetailScreen
 
+import androidx.navigation.navArgument
+import com.example.wisefox.model.LedgerResponse
+import com.example.wisefox.network.LedgerApiService
+import com.example.wisefox.network.RetrofitClient
+import com.example.wisefox.screens.LedgerDetailScreen
+import kotlinx.coroutines.runBlocking
 @Composable
 fun WiseFoxNavGraph(navController: NavHostController) {
 
@@ -107,22 +116,28 @@ fun WiseFoxNavGraph(navController: NavHostController) {
             }
         }
 
-        // ── LedgerDetail ──────────────────────────────────────────────────────────
+        // ── Ledger Detail ─────────────────────────────────────────────────────
         composable(
             route = Screen.LedgerDetail.route,
-            arguments = listOf(
-                navArgument("ledgerId")   { type = NavType.LongType },
-                navArgument("ledgerName") { type = NavType.StringType }
-            )
+            arguments = listOf(navArgument("ledgerId") { type = NavType.LongType })
         ) { backStackEntry ->
-            val ledgerId   = backStackEntry.arguments?.getLong("ledgerId") ?: 0L
-            val ledgerName = backStackEntry.arguments?.getString("ledgerName") ?: ""
-            WiseFoxLayout(navController = navController) {
-                LedgerDetailScreen(
-                    ledgerId   = ledgerId,
-                    ledgerName = ledgerName,
-                    navController = navController
-                )
+            val ledgerId = backStackEntry.arguments?.getLong("ledgerId") ?: return@composable
+            // We fetch ledger info here to pass down as LedgerResponse
+            // Use a ViewModel or a simple state to load it
+            val ledgerState = remember { mutableStateOf<LedgerResponse?>(null) }
+            LaunchedEffect(ledgerId) {
+                try {
+                    val api = RetrofitClient.instance.create(LedgerApiService::class.java)
+                    val resp = api.getLedgerById(ledgerId)
+                    if (resp.isSuccessful) ledgerState.value = resp.body()
+                } catch (e: Exception) { /* ignore */ }
+            }
+            ledgerState.value?.let { ledger ->
+                WiseFoxLayout(navController = navController) {
+                    LedgerDetailScreen(navController = navController, ledger = ledger)
+                }
+            } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = com.example.wisefox.ui.theme.WiseFoxOrange)
             }
         }
 
