@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App -->
+    <string name="app_name">WiseFox</string>
+
+    <!-- Auth -->
+    <string name="login_title">欢迎回来</string>
+    <string name="login_subtitle">登录您的账户</string>
+    <string name="hint_email">邮箱</string>
+    <string name="hint_password">密码</string>
+    <string name="hint_name">名字</string>
+    <string name="hint_surname">姓氏</string>
+    <string name="hint_username">用户名</string>
+    <string name="hint_new_password">新密码（留空保持不变）</string>
+    <string name="btn_login">登录</string>
+    <string name="btn_register">没有账户？立即注册</string>
+    <string name="forgot_password">忘记密码？</string>
+    <string name="btn_login_google">Google 登录</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">主页</string>
+    <string name="nav_transactions">交易</string>
+    <string name="nav_ai">AI</string>
+    <string name="nav_profile">个人资料</string>
+
+    <!-- Home -->
+    <string name="earnings">收入</string>
+    <string name="expenses">支出</string>
+    <string name="welcome">欢迎，</string>
+    <string name="ledgers_capital">账本</string>
+    <string name="bar">-</string>
+    <string name="smart_tip">智能提示：</string>
+    <string name="solo_shared">个人/共享</string>
+    <string name="quick_advice">快速建议</string>
+    <string name="solo_capital">个人</string>
+    <string name="shared_capital">共享</string>
+    <string name="from_capital">从</string>
+    <string name="to_capital">到</string>
+
+    <!-- Transactions -->
+    <string name="filter_by_ledger">按账本筛选</string>
+    <string name="filter_by_category">按类别筛选</string>
+    <string name="add_transaction">添加交易</string>
+    <string name="transactions">交易记录</string>
+    <string name="statistics">统计</string>
+
+    <!-- Profile -->
+    <string name="language_capital">语言</string>
+    <string name="notification_capital">通知</string>
+    <string name="shared_ledgers_capital">共享账本</string>
+    <string name="security_capital">安全</string>
+    <string name="account_preferences_capital">账户设置</string>
+    <string name="my_ledgers_capital">我的账本</string>
+    <string name="premium_member">高级会员</string>
+    <string name="standard_member">普通用户</string>
+    <string name="edit_profile">编辑资料</string>
+    <string name="logout">退出登录</string>
+    <string name="back">返回</string>
+
+    <!-- Share ledger dialog -->
+    <string name="share_ledger_title">分享账本</string>
+    <string name="share_ledger_subtitle">邀请他人加入"%s"</string>
+    <string name="recipient_email">收件人邮箱</string>
+    <string name="share_sent_success">邀请发送成功！✓</string>
+    <string name="share_premium_required">分享账本是高级功能，请升级账户以与他人协作。</string>
+    <string name="upgrade_to_premium_hint">🦊 升级为高级会员以解锁账本分享功能！</string>
+    <string name="share_capital">分享</string>
+    <string name="send_capital">发送</string>
+    <string name="close">关闭</string>
+    <string name="cancel">取消</string>
+    <string name="retry">重试</string>
+
+    <!-- Edit Profile -->
+    <string name="profile_photo">个人头像</string>
+    <string name="tap_to_change_photo">点击更换头像</string>
+    <string name="personal_info_capital">个人信息</string>
+    <string name="account_info_capital">账户信息</string>
+    <string name="save_changes">保存更改</string>
+    <string name="password_hint">留空则保持当前密码不变</string>
+
+    <!-- Generic -->
+    <string name="loading">加载中…</string>
+    <string name="error_generic">出了点问题</string>
+
+</resources>

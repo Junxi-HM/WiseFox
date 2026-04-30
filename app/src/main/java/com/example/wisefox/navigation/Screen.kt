@@ -10,6 +10,8 @@ sealed class Screen(val route: String) {
     object AI           : Screen("ai")
     object Profile      : Screen("profile")
 
+    object EditProfile  : Screen("edit_profile")
+
     object LedgerDetail : Screen("ledger_detail/{ledgerId}") {
         fun createRoute(ledgerId: Long) = "ledger_detail/$ledgerId"
     }

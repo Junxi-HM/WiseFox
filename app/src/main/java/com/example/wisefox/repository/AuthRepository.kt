@@ -5,38 +5,38 @@ import com.example.wisefox.model.GoogleAuthRequest
 import com.example.wisefox.model.GoogleRegisterBody
 import com.example.wisefox.model.LoginRequest
 import com.example.wisefox.model.VerifyCodeBody
-import com.example.wisefox.network.RetrofitClient
 import com.example.wisefox.network.AuthApiService
+import com.example.wisefox.network.RetrofitClient
 
 class AuthRepository {
 
     private val api: AuthApiService =
         RetrofitClient.instance.create(AuthApiService::class.java)
 
-    // ── 手写登录 ──────────────────────────────────────────────────────────────
+    // ── Email + password login ─────────────────────────────────────────────────
     suspend fun login(email: String, password: String): AuthResponse {
         val response = api.login(LoginRequest(email, password))
         if (response.isSuccessful) {
             return response.body() ?: throw Exception("Empty response body")
         }
-        // 401 → 账号不存在或密码错误
         val code = response.code()
         throw Exception(
             when (code) {
-                401  -> "EMAIL_NOT_FOUND"   // 前端用这个标记区分"建议用 Google 注册"
+                401  -> "EMAIL_NOT_FOUND"
                 else -> "Login failed ($code)"
             }
         )
     }
 
-    // ── Google Step 1 ─────────────────────────────────────────────────────────
+    // ── Google Step 1: send Google ID token ────────────────────────────────────
+    // Returns map with keys: status, token, email, userId, name, surname, username, role
     suspend fun googleLogin(idToken: String): Map<String, String> {
         val response = api.googleLogin(GoogleAuthRequest(idToken))
         if (response.isSuccessful) return response.body() ?: emptyMap()
         throw Exception("Google login failed (${response.code()})")
     }
 
-    // ── Google Step 2 ─────────────────────────────────────────────────────────
+    // ── Google Step 2: verify 6-digit code ────────────────────────────────────
     suspend fun verifyCode(email: String, code: String): Map<String, String> {
         val response = api.verifyCode(VerifyCodeBody(email, code))
         if (response.isSuccessful) return response.body() ?: emptyMap()
@@ -48,7 +48,8 @@ class AuthRepository {
         )
     }
 
-    // ── Google Step 3 ─────────────────────────────────────────────────────────
+    // ── Google Step 3: complete registration ───────────────────────────────────
+    // Returns map with keys: token, userId, username, email, name, surname, role
     suspend fun registerWithGoogle(
         googleToken: String,
         username: String,

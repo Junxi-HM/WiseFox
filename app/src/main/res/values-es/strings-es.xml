@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App -->
+    <string name="app_name">WiseFox</string>
+
+    <!-- Auth -->
+    <string name="login_title">Bienvenido de nuevo</string>
+    <string name="login_subtitle">Inicia sesión en tu cuenta</string>
+    <string name="hint_email">Correo electrónico</string>
+    <string name="hint_password">Contraseña</string>
+    <string name="hint_name">Nombre</string>
+    <string name="hint_surname">Apellido</string>
+    <string name="hint_username">Usuario</string>
+    <string name="hint_new_password">Nueva contraseña (deja en blanco para mantener)</string>
+    <string name="btn_login">Iniciar sesión</string>
+    <string name="btn_register">¿Sin cuenta? Regístrate</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="btn_login_google">Iniciar con Google</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_transactions">Transacciones</string>
+    <string name="nav_ai">IA</string>
+    <string name="nav_profile">Perfil</string>
+
+    <!-- Home -->
+    <string name="earnings">Ingresos</string>
+    <string name="expenses">Gastos</string>
+    <string name="welcome">Bienvenido,</string>
+    <string name="ledgers_capital">LIBROS</string>
+    <string name="bar">-</string>
+    <string name="smart_tip">Consejo inteligente:</string>
+    <string name="solo_shared">Solo/Compartido</string>
+    <string name="quick_advice">Consejo rápido</string>
+    <string name="solo_capital">SOLO</string>
+    <string name="shared_capital">COMPARTIDO</string>
+    <string name="from_capital">DESDE</string>
+    <string name="to_capital">HASTA</string>
+
+    <!-- Transactions -->
+    <string name="filter_by_ledger">Filtrar por libro</string>
+    <string name="filter_by_category">Filtrar por categoría</string>
+    <string name="add_transaction">Añadir transacción</string>
+    <string name="transactions">Transacciones</string>
+    <string name="statistics">Estadísticas</string>
+
+    <!-- Profile -->
+    <string name="language_capital">IDIOMA</string>
+    <string name="notification_capital">NOTIFICACIONES</string>
+    <string name="shared_ledgers_capital">LIBROS COMPARTIDOS</string>
+    <string name="security_capital">SEGURIDAD</string>
+    <string name="account_preferences_capital">PREFERENCIAS DE CUENTA</string>
+    <string name="my_ledgers_capital">MIS LIBROS</string>
+    <string name="premium_member">MIEMBRO PREMIUM</string>
+    <string name="standard_member">ESTÁNDAR</string>
+    <string name="edit_profile">Editar Perfil</string>
+    <string name="logout">Cerrar Sesión</string>
+    <string name="back">Atrás</string>
+
+    <!-- Share ledger dialog -->
+    <string name="share_ledger_title">Compartir Libro</string>
+    <string name="share_ledger_subtitle">Invitar a alguien a unirse a \"%s\"</string>
+    <string name="recipient_email">Email del destinatario</string>
+    <string name="share_sent_success">¡Invitación enviada con éxito! ✓</string>
+    <string name="share_premium_required">Compartir libros es una función Premium. Actualiza tu cuenta para colaborar con otros.</string>
+    <string name="upgrade_to_premium_hint">🦊 ¡Hazte Premium para desbloquear el uso compartido!</string>
+    <string name="share_capital">COMPARTIR</string>
+    <string name="send_capital">ENVIAR</string>
+    <string name="close">Cerrar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="retry">Reintentar</string>
+
+    <!-- Edit Profile -->
+    <string name="profile_photo">FOTO DE PERFIL</string>
+    <string name="tap_to_change_photo">Toca para cambiar la foto</string>
+    <string name="personal_info_capital">INFORMACIÓN PERSONAL</string>
+    <string name="account_info_capital">INFORMACIÓN DE CUENTA</string>
+    <string name="save_changes">Guardar Cambios</string>
+    <string name="password_hint">Deja en blanco para mantener tu contraseña actual</string>
+
+    <!-- Generic -->
+    <string name="loading">Cargando…</string>
+    <string name="error_generic">Algo salió mal</string>
+
+</resources>
