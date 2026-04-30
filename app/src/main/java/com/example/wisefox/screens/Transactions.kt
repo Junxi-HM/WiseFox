@@ -3,6 +3,7 @@
 package com.example.wisefox.screens
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -256,72 +257,6 @@ private fun TransactionsContent(
     }
 }
 
-// ── Statistics content ────────────────────────────────────────────────────────
-
-@Composable
-private fun StatisticsContent(transactions: List<TransactionResponse>) {
-    val totalExpense = transactions.filter { it.type?.name == "EXPENSE" }.sumOf { it.amount ?: 0.0 }.toFloat()
-    val totalIncome  = transactions.filter { it.type?.name == "INCOME"  }.sumOf { it.amount ?: 0.0 }.toFloat()
-    val total = totalExpense + totalIncome
-
-    val pieSlices = if (total > 0) listOf(
-        PieSlice("Expenses", totalExpense, Color(0xFFE06030)),
-        PieSlice("Income",   totalIncome,  Color(0xFF4A9E6A))
-    ) else listOf(PieSlice("No data", 1f, Color(0xFFCCCCCC)))
-
-    // Bar chart by category
-    val byCategory = transactions
-        .filter { it.type?.name == "EXPENSE" }
-        .groupBy { it.category?.name ?: "OTHER" }
-        .map { (cat, list) -> BarEntry(cat, list.sumOf { it.amount ?: 0.0 }.toFloat()) }
-        .sortedByDescending { it.value }
-        .take(6)
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Summary totals
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("INCOME", fontSize = 11.sp, color = TextSecondary, fontWeight = FontWeight.Bold)
-                    Text("+%.2f€".format(totalIncome), fontSize = 18.sp, color = Color(0xFF4A9E6A), fontWeight = FontWeight.Bold)
-                }
-                Divider(modifier = Modifier.height(40.dp).width(1.dp), color = TextSecondary.copy(alpha = 0.3f))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("EXPENSES", fontSize = 11.sp, color = TextSecondary, fontWeight = FontWeight.Bold)
-                    Text("-%.2f€".format(totalExpense), fontSize = 18.sp, color = Color(0xFFE06030), fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        // Pie chart
-        StatCard(title = "Overview", subtitle = "Income vs Expenses") {
-            PieChart(slices = pieSlices, modifier = Modifier.size(140.dp).align(Alignment.CenterEnd))
-        }
-
-        // Bar chart
-        if (byCategory.isNotEmpty()) {
-            StatCard(title = "Expenses by Category", subtitle = "Top categories") {
-                BarChart(
-                    entries = byCategory,
-                    modifier = Modifier.height(120.dp).fillMaxWidth(0.65f).align(Alignment.CenterEnd)
-                )
-            }
-        }
-    }
-}
-
 // ── Filter chip row ───────────────────────────────────────────────────────────
 
 @Composable
@@ -513,70 +448,380 @@ private fun SelectorOptionTx(text: String, isSelected: Boolean, onClick: () -> U
     }
 }
 
-// ── Chart helpers (keep existing implementations) ────────────────────────────
-
-private data class PieSlice(val label: String, val value: Float, val color: Color)
-private data class BarEntry(val label: String, val value: Float)
+// ── Statistics content ────────────────────────────────────────────────────────
 
 @Composable
-private fun StatCard(title: String, subtitle: String, chart: @Composable BoxScope.() -> Unit) {
+private fun StatisticsContent(transactions: List<TransactionResponse>) {
+
+    // ── Aggregations ──────────────────────────────────────────────────────────
+    val expenses = transactions.filter { it.type?.name == "EXPENSE" }
+    val incomes  = transactions.filter { it.type?.name == "INCOME" }
+
+    val totalExpense = expenses.sumOf { it.amount ?: 0.0 }
+    val totalIncome  = incomes .sumOf { it.amount ?: 0.0 }
+    val net          = totalIncome - totalExpense
+
+    // By category (expenses only, sorted desc)
+    val byCategory = expenses
+        .groupBy { it.category?.name ?: "OTHER" }
+        .map { (cat, list) -> cat to list.sumOf { it.amount ?: 0.0 } }
+        .sortedByDescending { it.second }
+
+    // By date – last 7 days income vs expense
+    val today = LocalDate.now()
+    val last7 = (6 downTo 0).map { today.minusDays(it.toLong()) }
+    val dailyExpense = last7.map { day ->
+        expenses.filter { it.date == day }.sumOf { it.amount ?: 0.0 }.toFloat()
+    }
+    val dailyIncome = last7.map { day ->
+        incomes.filter { it.date == day }.sumOf { it.amount ?: 0.0 }.toFloat()
+    }
+    val dayLabels = last7.map { it.dayOfMonth.toString() }
+
+    // Top-3 expense categories for the highlight row
+    val top3 = byCategory.take(3)
+
+    val categoryColors = listOf(
+        Color(0xFFE06030), Color(0xFFFFD97A), Color(0xFF4A9E6A),
+        Color(0xFF4A90D9), Color(0xFF9B59B6), Color(0xFF1ABC9C),
+        Color(0xFFE91E8C), Color(0xFF607D8B)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+
+        // ── 1. Summary totals ──────────────────────────────────────────────
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
+            elevation = CardDefaults.cardElevation(2.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 18.dp, horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SummaryBlock("INCOME",   "+%.2f€".format(totalIncome),  Color(0xFF4A9E6A))
+                VerticalDividerLine()
+                SummaryBlock("EXPENSES", "-%.2f€".format(totalExpense), Color(0xFFE06030))
+                VerticalDividerLine()
+                SummaryBlock(
+                    label      = "NET",
+                    value      = "%+.2f€".format(net),
+                    valueColor = if (net >= 0) Color(0xFF4A9E6A) else Color(0xFFE06030)
+                )
+            }
+        }
+
+        // ── 2. Pie chart – Income vs Expenses ─────────────────────────────
+        if (totalExpense > 0 || totalIncome > 0) {
+            val pieSlices = buildList {
+                if (totalExpense > 0) add(PieSlice("Expenses", totalExpense.toFloat(), Color(0xFFE06030)))
+                if (totalIncome  > 0) add(PieSlice("Income",   totalIncome .toFloat(), Color(0xFF4A9E6A)))
+            }
+            StatSectionCard(title = "Overview", subtitle = "Income vs Expenses") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PieChartFull(slices = pieSlices, modifier = Modifier.size(130.dp))
+                    Spacer(modifier = Modifier.width(20.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        pieSlices.forEach { slice ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .background(slice.color, shape = RoundedCornerShape(3.dp))
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(slice.label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    val pct = if ((totalExpense + totalIncome) > 0)
+                                        (slice.value / (totalExpense + totalIncome).toFloat()) * 100f else 0f
+                                    Text("%.1f%%".format(pct), fontSize = 11.sp, color = TextSecondary)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── 3. Expenses by category – horizontal bar chart ────────────────
+        if (byCategory.isNotEmpty()) {
+            StatSectionCard(title = "Expenses by Category", subtitle = "All time breakdown") {
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val maxVal = byCategory.maxOfOrNull { it.second } ?: 1.0
+                    byCategory.forEachIndexed { index, (cat, amount) ->
+                        val fraction = (amount / maxVal).toFloat().coerceIn(0f, 1f)
+                        val color = categoryColors[index % categoryColors.size]
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = cat.lowercase().replaceFirstChar { it.uppercaseChar() },
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "%.2f€".format(amount),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = color
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .background(color.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction)
+                                        .fillMaxHeight()
+                                        .background(color, RoundedCornerShape(4.dp))
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── 4. Last 7 days – grouped bar chart ────────────────────────────
+        val hasRecentData = (dailyExpense + dailyIncome).any { it > 0f }
+        if (hasRecentData) {
+            StatSectionCard(title = "Last 7 Days", subtitle = "Daily income & expenses") {
+                Spacer(modifier = Modifier.height(8.dp))
+                // Legend
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    LegendDot(Color(0xFFE06030), "Expenses")
+                    LegendDot(Color(0xFF4A9E6A), "Income")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                GroupedBarChart(
+                    labels       = dayLabels,
+                    series1      = dailyExpense,
+                    series2      = dailyIncome,
+                    color1       = Color(0xFFE06030),
+                    color2       = Color(0xFF4A9E6A),
+                    modifier     = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                )
+            }
+        }
+
+        // ── 5. Top spends highlight ───────────────────────────────────────
+        if (top3.isNotEmpty()) {
+            StatSectionCard(title = "Top Spending Categories", subtitle = "Where most money goes") {
+                Spacer(modifier = Modifier.height(8.dp))
+                top3.forEachIndexed { i, (cat, amount) ->
+                    val medals = listOf("🥇", "🥈", "🥉")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(medals[i], fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = cat.lowercase().replaceFirstChar { it.uppercaseChar() },
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = TextPrimary
+                            )
+                        }
+                        Text(
+                            text = "%.2f€".format(amount),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = categoryColors[i]
+                        )
+                    }
+                    if (i < top3.lastIndex) HorizontalDivider(color = TextSecondary.copy(alpha = 0.15f))
+                }
+            }
+        }
+
+        // Empty state
+        if (transactions.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No transactions to display", color = TextSecondary, fontSize = 14.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(80.dp)) // room for FAB
+    }
+}
+
+// ── Shared card wrapper ───────────────────────────────────────────────────────
+
+@Composable
+private fun StatSectionCard(
+    title: String,
+    subtitle: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        Box(modifier = Modifier.fillMaxWidth().padding(16.dp).height(170.dp)) {
-            Column {
-                Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                Text(subtitle, fontSize = 12.sp, color = TextSecondary)
-            }
-            chart()
+        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+            Text(title,    fontSize = 15.sp, fontWeight = FontWeight.Bold,    color = TextPrimary)
+            Text(subtitle, fontSize = 11.sp, fontWeight = FontWeight.Normal,  color = TextSecondary)
+            content()
         }
     }
 }
 
+// ── Summary block ─────────────────────────────────────────────────────────────
+
 @Composable
-private fun PieChart(slices: List<PieSlice>, modifier: Modifier = Modifier) {
-    val total = slices.sumOf { it.value.toDouble() }.toFloat()
+private fun SummaryBlock(label: String, value: String, valueColor: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 0.8.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = valueColor)
+    }
+}
+
+@Composable
+private fun VerticalDividerLine() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(40.dp)
+            .background(TextSecondary.copy(alpha = 0.2f))
+    )
+}
+
+@Composable
+private fun LegendDot(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(label, fontSize = 11.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+// ── Pie chart ─────────────────────────────────────────────────────────────────
+
+private data class PieSlice(val label: String, val value: Float, val color: Color)
+
+@Composable
+private fun PieChartFull(slices: List<PieSlice>, modifier: Modifier = Modifier) {
+    val total = slices.sumOf { it.value.toDouble() }.toFloat().takeIf { it > 0f } ?: 1f
     Canvas(modifier = modifier) {
         var startAngle = -90f
+        val stroke = size.width * 0.20f
+        val inset  = stroke / 2f
         slices.forEach { slice ->
-            val sweep = if (total > 0f) (slice.value / total) * 360f else 360f
-            drawArc(color = slice.color, startAngle = startAngle, sweepAngle = sweep,
-                useCenter = false, topLeft = Offset(size.width * 0.05f, size.height * 0.05f),
-                size = Size(size.width * 0.9f, size.height * 0.9f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = size.width * 0.18f))
+            val sweep = (slice.value / total) * 360f
+            drawArc(
+                color      = slice.color,
+                startAngle = startAngle,
+                sweepAngle = sweep - 2f,   // small gap between slices
+                useCenter  = false,
+                topLeft    = Offset(inset, inset),
+                size       = Size(size.width - stroke, size.height - stroke),
+                style      = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            )
             startAngle += sweep
         }
     }
 }
 
+// ── Grouped bar chart (last 7 days) ──────────────────────────────────────────
+
 @Composable
-private fun BarChart(entries: List<BarEntry>, modifier: Modifier = Modifier) {
+private fun GroupedBarChart(
+    labels:   List<String>,
+    series1:  List<Float>,   // expenses
+    series2:  List<Float>,   // income
+    color1:   Color,
+    color2:   Color,
+    modifier: Modifier = Modifier
+) {
     val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
-    val barColors = listOf(Color(0xFFE06030), Color(0xFFFFD97A), Color(0xFF4A9E6A),
-        Color(0xFF4A90D9), Color(0xFF9B59B6), Color(0xFF1ABC9C))
-    val maxValue = entries.maxOfOrNull { it.value } ?: 1f
-    val axisColor = TextSecondary.copy(alpha = 0.6f)
+    val maxVal = (series1 + series2).maxOrNull()?.takeIf { it > 0f } ?: 1f
 
     Canvas(modifier = modifier) {
-        val chartHeight = size.height * 0.75f
-        val barCount = entries.size
-        if (barCount == 0) return@Canvas
-        val totalWidth = size.width
-        val barWidth = totalWidth / (barCount * 1.8f)
-        val gap = (totalWidth - barWidth * barCount) / (barCount + 1)
+        val n         = labels.size
+        val labelH    = 22.dp.toPx()
+        val chartH    = size.height - labelH
+        val slotW     = size.width / n
+        val barW      = slotW * 0.30f
+        val gap       = slotW * 0.04f
+        val axisColor = Color(0xFFCCCCCC)
 
-        drawLine(axisColor, Offset(0f, 0f), Offset(0f, chartHeight), 2f)
-        entries.forEachIndexed { index, entry ->
-            val left = index * (barWidth + gap) + gap / 2f
-            val barHeight = (entry.value / maxValue) * chartHeight
-            val top = chartHeight - barHeight
-            drawRect(color = barColors[index % barColors.size], topLeft = Offset(left, top), size = Size(barWidth, barHeight))
+        // Baseline
+        drawLine(axisColor, Offset(0f, chartH), Offset(size.width, chartH), 1.5f)
+
+        repeat(n) { i ->
+            val slotLeft = i * slotW
+            val centerX  = slotLeft + slotW / 2f
+
+            // Bar 1 – expense
+            val h1 = (series1[i] / maxVal) * chartH
+            if (h1 > 0f) {
+                drawRect(
+                    color   = color1,
+                    topLeft = Offset(centerX - barW - gap / 2f, chartH - h1),
+                    size    = Size(barW, h1)
+                )
+            }
+
+            // Bar 2 – income
+            val h2 = (series2[i] / maxVal) * chartH
+            if (h2 > 0f) {
+                drawRect(
+                    color   = color2,
+                    topLeft = Offset(centerX + gap / 2f, chartH - h2),
+                    size    = Size(barW, h2)
+                )
+            }
+
+            // Day label
             val measured = textMeasurer.measure(
-                AnnotatedString(entry.value.toInt().toString()),
-                style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = axisColor)
+                androidx.compose.ui.text.AnnotatedString(labels[i]),
+                style = androidx.compose.ui.text.TextStyle(
+                    fontSize   = 10.sp,
+                    color      = Color(0xFF888888),
+                    fontWeight = FontWeight.SemiBold
+                )
             )
-            drawText(measured, topLeft = Offset(left + barWidth / 2f - measured.size.width / 2f, top - measured.size.height - 2f))
+            drawText(
+                measured,
+                topLeft = Offset(
+                    centerX - measured.size.width / 2f,
+                    chartH + 4.dp.toPx()
+                )
+            )
         }
     }
 }
