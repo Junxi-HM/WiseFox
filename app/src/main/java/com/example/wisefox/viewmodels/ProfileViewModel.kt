@@ -50,9 +50,6 @@ class ProfileViewModel : ViewModel() {
     private val _updateProfileState = MutableStateFlow<UpdateProfileState>(UpdateProfileState.Idle)
     val updateProfileState: StateFlow<UpdateProfileState> = _updateProfileState
 
-    // Current stored password (needed for update since backend requires it)
-    private var currentPassword: String = ""
-
     init {
         loadProfile()
     }
@@ -111,12 +108,13 @@ class ProfileViewModel : ViewModel() {
     }
 
     // ── Update profile ─────────────────────────────────────────────────────────
+    // FIX #4: `password` is nullable now. Passing null/blank means "do not change".
     fun updateProfile(
         name: String,
         surname: String,
         username: String,
         email: String,
-        password: String,
+        password: String?,
         pfpBytes: ByteArray?
     ) {
         val userId = SessionManager.getUserId()

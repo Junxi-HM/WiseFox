@@ -29,32 +29,41 @@ class UserRepository {
     }
 
     // ── Update user profile ────────────────────────────────────────────────────
+    // FIX: always send the "password" part so Spring @RequestParam(required=true)
+    //      never rejects the request. Send empty string when not changing password
+    //      — the backend (UserService) skips encoding when the string is blank.
     suspend fun updateUser(
         id: Long,
         name: String,
         surname: String,
         username: String,
         email: String,
-        password: String,
+        password: String?,       // null or blank = "do not change"
         pfpBytes: ByteArray?
     ): UserResponse {
-        val toBody = { s: String ->
+        val toPlainBody = { s: String ->
             s.toRequestBody("text/plain".toMediaTypeOrNull())
         }
+
+        // Always send password field; empty string when no change is requested.
+        // Backend UserService checks isBlank() and skips re-encoding if so.
+        val passwordValue = password?.takeIf { it.isNotBlank() } ?: ""
+
         val pfpPart = pfpBytes?.let {
             MultipartBody.Part.createFormData(
                 "pfpFile", "avatar.jpg",
                 it.toRequestBody("image/jpeg".toMediaTypeOrNull())
             )
         }
+
         val response = api.updateUser(
-            id         = id,
-            name       = toBody(name),
-            surname    = toBody(surname),
-            username   = toBody(username),
-            email      = toBody(email),
-            password   = toBody(password),
-            pfpFile    = pfpPart
+            id       = id,
+            name     = toPlainBody(name),
+            surname  = toPlainBody(surname),
+            username = toPlainBody(username),
+            email    = toPlainBody(email),
+            password = toPlainBody(passwordValue),   // always present, never null
+            pfpFile  = pfpPart
         )
         if (response.isSuccessful) return response.body() ?: throw Exception("Empty update body")
         throw Exception("Update failed (${response.code()})")
@@ -70,8 +79,14 @@ class UserRepository {
     // ── Share ledger by email ──────────────────────────────────────────────────
     suspend fun shareLedgerByEmail(ownerUserId: Long, ledgerId: Long, targetEmail: String) {
         val response = api.shareLedgerByEmail(
-            ShareLedgerRequest(ownerUserId, ledgerId, targetEmail)
+            ShareLedgerRequest(
+                ownerUserId = ownerUserId,
+                ledgerId    = ledgerId,
+                targetEmail = targetEmail
+            )
         )
-        if (!response.isSuccessful) throw Exception("Share failed (${response.code()})")
+        if (!response.isSuccessful) {
+            throw Exception("Share failed (${response.code()})")
+        }
     }
 }

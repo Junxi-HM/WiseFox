@@ -1,5 +1,6 @@
 package com.example.wisefox.screens
 
+import android.app.Activity
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -61,6 +62,9 @@ fun ProfileScreen(
     var showShareDialog  by remember { mutableStateOf(false) }
     var selectedLedger   by remember { mutableStateOf<LedgerResponse?>(null) }
 
+    // FIX #1: logout confirmation dialog
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     // ── Share dialog ────────────────────────────────────────────────────────────
     if (showShareDialog && selectedLedger != null) {
         val isPremium = (uiState as? ProfileUiState.Success)?.user?.role == "PREMIUM"
@@ -76,6 +80,49 @@ fun ProfileScreen(
                 selectedLedger  = null
                 viewModel.resetShareState()
             }
+        )
+    }
+
+    // ── Logout confirmation dialog (FIX #1) ─────────────────────────────────────
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(
+                    text = stringResource(R.string.logout),
+                    color = WiseFoxOrangeDark,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.logout_confirm_message),
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutDialog = false
+                    // Clear session and navigate to login, removing back-stack
+                    SessionManager.clear()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }) {
+                    Text(
+                        text = stringResource(R.string.logout),
+                        color = DangerRed,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text(stringResource(R.string.cancel), color = TextSecondary)
+                }
+            },
+            containerColor = WiseFoxSubCardBg
         )
     }
 
@@ -131,14 +178,22 @@ fun ProfileScreen(
                     selectedLanguage = selectedLanguage,
                     navController    = navController,
                     onLanguageChange = { lang ->
+                        // FIX #2: persist + apply + recreate the activity so EVERY
+                        // string on every screen refreshes immediately.
                         selectedLanguage = lang
-                        SessionManager.saveLanguage(lang)
-                        LocaleHelper.setLocale(context, lang)
+                        val activity = context as? Activity
+                        if (activity != null) {
+                            LocaleHelper.applyAndRecreate(activity, lang)
+                        } else {
+                            SessionManager.saveLanguage(lang)
+                            LocaleHelper.setLocale(context, lang)
+                        }
                     },
                     onShareLedger    = { ledger ->
                         selectedLedger  = ledger
                         showShareDialog = true
-                    }
+                    },
+                    onLogout         = { showLogoutDialog = true }
                 )
             }
         }
@@ -156,7 +211,8 @@ private fun ProfileContent(
     selectedLanguage: String,
     navController: NavController,
     onLanguageChange: (String) -> Unit,
-    onShareLedger: (LedgerResponse) -> Unit
+    onShareLedger: (LedgerResponse) -> Unit,
+    onLogout: () -> Unit
 ) {
     val isPremium = user.role == "PREMIUM"
 
@@ -378,8 +434,9 @@ private fun ProfileContent(
     }
 
     // ── Logout button ─────────────────────────────────────────────────────────
+    // FIX #1: now actually triggers logout flow.
     OutlinedButton(
-        onClick  = { /* TODO: logout */ },
+        onClick  = onLogout,
         shape    = RoundedCornerShape(14.dp),
         border   = androidx.compose.foundation.BorderStroke(1.5.dp, DangerRed),
         modifier = Modifier.fillMaxWidth()
@@ -416,31 +473,23 @@ private fun LedgerShareRow(ledger: LedgerResponse, onShare: () -> Unit) {
                 color      = WiseFoxOrangeDark
             )
             Text(
-                text     = ledger.currency,
+                text     = ledger.currency ?: "",
                 fontSize = 12.sp,
                 color    = TextSecondary
             )
         }
-        TextButton(onClick = onShare) {
+        IconButton(onClick = onShare) {
             Icon(
-                painter             = painterResource(R.drawable.ic_shared),
-                contentDescription  = null,
-                tint                = WiseFoxOrangeDark,
-                modifier            = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text       = stringResource(R.string.share_capital),
-                color      = WiseFoxOrangeDark,
-                fontWeight = FontWeight.Bold,
-                fontSize   = 13.sp
+                painter            = painterResource(R.drawable.ic_shared),
+                contentDescription = stringResource(R.string.share_capital),
+                tint               = WiseFoxOrangeDark
             )
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Share Ledger Dialog
+// Share dialog
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
 private fun ShareLedgerDialog(
@@ -455,43 +504,23 @@ private fun ShareLedgerDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape  = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier            = Modifier.padding(24.dp),
+                modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Icon
-                Box(
-                    modifier        = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(if (isPremium) WiseFoxOrangePale else Color(0xFFFFEEEE)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter             = painterResource(R.drawable.ic_shared),
-                        contentDescription  = null,
-                        tint                = if (isPremium) WiseFoxOrangeDark else DangerRed,
-                        modifier            = Modifier.size(28.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Text(
                     text       = stringResource(R.string.share_ledger_title),
-                    fontSize   = 18.sp,
+                    fontSize   = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color      = WiseFoxOrangeDark,
-                    textAlign  = TextAlign.Center
+                    color      = WiseFoxOrangeDark
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (!isPremium) {
-                    // Not premium → show restriction message
                     Text(
                         text      = stringResource(R.string.share_premium_required),
                         fontSize  = 14.sp,
@@ -525,7 +554,6 @@ private fun ShareLedgerDialog(
                         Text(stringResource(R.string.close), color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 } else {
-                    // Premium → show share form
                     Text(
                         text      = stringResource(R.string.share_ledger_subtitle, ledger.name),
                         fontSize  = 13.sp,

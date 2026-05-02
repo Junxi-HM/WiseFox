@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.wisefox.screens.*
 import com.example.wisefox.screens.common.WiseFoxLayout
+import com.example.wisefox.viewmodels.HomeViewModel
 import com.example.wisefox.viewmodels.LoginUiState
 import com.example.wisefox.viewmodels.LoginViewModel
 import com.example.wisefox.viewmodels.ProfileViewModel
@@ -19,14 +20,14 @@ import com.example.wisefox.viewmodels.ProfileViewModel
 @Composable
 fun WiseFoxNavGraph(navController: NavHostController) {
 
-    // Shared LoginViewModel across Login → GoogleRegister
     val loginViewModel: LoginViewModel = viewModel()
     val loginUiState by loginViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Shared ProfileViewModel across Profile → EditProfile (so data isn't re-fetched)
     val profileViewModel: ProfileViewModel = viewModel()
 
-    // Navigate to GoogleRegister when needed
+    // 共享同一个 HomeViewModel，这样 ledger_detail 路由能从里面查账本
+    val homeViewModel: HomeViewModel = viewModel()
+
     LaunchedEffect(loginUiState) {
         if (loginUiState is LoginUiState.NeedRegister) {
             val state = loginUiState as LoginUiState.NeedRegister
@@ -49,7 +50,7 @@ fun WiseFoxNavGraph(navController: NavHostController) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = { /* TODO: manual register */ },
+                onNavigateToRegister = { /* TODO */ },
                 viewModel            = loginViewModel
             )
         }
@@ -79,7 +80,7 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         // ── Home ──────────────────────────────────────────────────────────────
         composable(Screen.Home.route) {
             WiseFoxLayout(navController = navController) {
-                HomeScreen(navController)
+                HomeScreen(navController, vm = homeViewModel)
             }
         }
 
@@ -107,12 +108,30 @@ fun WiseFoxNavGraph(navController: NavHostController) {
             }
         }
 
-        // ── Edit Profile (no bottom nav — full screen) ─────────────────────────
+        // ── Edit Profile ──────────────────────────────────────────────────────
         composable(Screen.EditProfile.route) {
             WiseFoxLayout(navController = navController) {
                 EditProfileScreen(
                     navController = navController,
                     viewModel     = profileViewModel
+                )
+            }
+        }
+
+        // ── Ledger Detail ─────────────────────────────────────────────────────
+        composable(
+            route     = Screen.LedgerDetail.route,          // "ledger_detail/{ledgerId}"
+            arguments = listOf(
+                navArgument("ledgerId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val ledgerId = backStackEntry.arguments?.getLong("ledgerId") ?: return@composable
+            val ledger   = homeViewModel.findLedgerById(ledgerId) ?: return@composable
+
+            WiseFoxLayout(navController = navController) {
+                LedgerDetailScreen(
+                    navController = navController,
+                    ledger        = ledger
                 )
             }
         }

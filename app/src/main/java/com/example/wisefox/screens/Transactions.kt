@@ -18,12 +18,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.*
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,7 +47,7 @@ import java.time.format.DateTimeFormatter
 
 enum class TransactionTab { TRANSACTIONS, STATISTICS }
 
-// ── Host ──────────────────────────────────────────────────────────────────────
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 @Composable
 fun TransactionsScreen(
@@ -59,7 +63,7 @@ fun TransactionsScreen(
     val crudState    by vm.crudState.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
 
-    // Close dialog on success
+    // Close dialog on success / show error snackbar
     LaunchedEffect(crudState) {
         if (crudState is TxCrudState.Success) {
             showForm = false
@@ -127,7 +131,11 @@ fun TransactionsScreen(
                         .padding(end = 10.dp, bottom = 10.dp)
                         .size(64.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(36.dp))
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
                 }
             }
         }
@@ -153,79 +161,90 @@ fun TransactionsScreen(
 private fun TransactionsContent(
     transactions: List<TransactionResponse>,
     isLoading: Boolean,
-    ledgerNames: Map<Long, String>,
+    ledgerNames: Map<Long, String>,   // kept for API compatibility
     onTxClick: (TransactionResponse) -> Unit
 ) {
-    var ledgerFilter   by remember { mutableStateOf("--ALL--") }
-    var categoryFilter by remember { mutableStateOf("--ALL--") }
+    // FIX: "All" is now localised. Explicit type annotation avoids the
+    //      "Cannot infer type for this parameter" compiler error (error #48).
+    val allLabel = stringResource(R.string.filter_all)
+
+    var ledgerFilter   by remember(allLabel) { mutableStateOf<String>(allLabel) }
+    var categoryFilter by remember(allLabel) { mutableStateOf<String>(allLabel) }
     var fromDate       by remember { mutableStateOf<LocalDate?>(null) }
     var toDate         by remember { mutableStateOf<LocalDate?>(null) }
 
-    val uniqueLedgers   = remember(transactions) { transactions.mapNotNull { it.ledgerName }.distinct() }
+    val uniqueLedgers    = remember(transactions) { transactions.mapNotNull { it.ledgerName }.distinct() }
     val uniqueCategories = remember(transactions) { transactions.mapNotNull { it.category?.name }.distinct() }
 
     val filtered = transactions.filter { tx ->
-        val matchLedger   = ledgerFilter   == "--ALL--" || tx.ledgerName == ledgerFilter
-        val matchCategory = categoryFilter == "--ALL--" || tx.category?.name == categoryFilter
-        val txDate = tx.date
+        val matchLedger   = ledgerFilter   == allLabel || tx.ledgerName == ledgerFilter
+        val matchCategory = categoryFilter == allLabel || tx.category?.name == categoryFilter
+        val txDate  = tx.date
         val matchFrom = fromDate == null || (txDate != null && !txDate.isBefore(fromDate))
         val matchTo   = toDate   == null || (txDate != null && !txDate.isAfter(toDate))
         matchLedger && matchCategory && matchFrom && matchTo
     }
 
+    // FIX #5: date group labels now come from strings resources
+    val unknownLabel   = stringResource(R.string.unknown_label).uppercase()
+    val todayLabel     = stringResource(R.string.today_label).uppercase()
+    val yesterdayLabel = stringResource(R.string.yesterday_label).uppercase()
+
     val grouped = filtered.groupBy { tx ->
         val today = LocalDate.now()
         when {
-            tx.date == null                    -> "UNKNOWN"
-            tx.date == today                   -> "TODAY"
-            tx.date == today.minusDays(1)      -> "YESTERDAY"
+            tx.date == null               -> unknownLabel
+            tx.date == today              -> todayLabel
+            tx.date == today.minusDays(1) -> yesterdayLabel
             else -> tx.date.format(DateTimeFormatter.ofPattern("d MMM yyyy")).uppercase()
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // ── Filter card ──────────────────────────────────────────────────
+        // ── Filter card (FIX #3: ExposedDropdownMenuBox replaces chip rows) ──
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
+            shape    = RoundedCornerShape(16.dp),
+            colors   = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Ledger filter
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    FilterLabel("LEDGER")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    FilterChipScroll(
-                        values  = listOf("--ALL--") + uniqueLedgers,
-                        selected = ledgerFilter,
-                        onSelect = { ledgerFilter = it }
-                    )
-                }
-                // Category filter
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    FilterLabel("CATEGORY")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    FilterChipScroll(
-                        values   = listOf("--ALL--") + uniqueCategories,
-                        selected  = categoryFilter,
-                        onSelect  = { categoryFilter = it }
-                    )
-                }
+                FilterDropdown(
+                    label    = stringResource(R.string.filter_by_ledger),
+                    values   = listOf(allLabel) + uniqueLedgers,
+                    selected = ledgerFilter,
+                    onSelect = { ledgerFilter = it }
+                )
+                FilterDropdown(
+                    label    = stringResource(R.string.filter_by_category),
+                    values   = listOf(allLabel) + uniqueCategories,
+                    selected = categoryFilter,
+                    onSelect = { categoryFilter = it }
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         if (isLoading) {
-            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 CircularProgressIndicator(color = WiseFoxOrange)
             }
         } else if (filtered.isEmpty()) {
-            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text("No transactions found", color = TextSecondary, fontSize = 14.sp)
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text  = stringResource(R.string.no_transactions_found),
+                    color = TextSecondary,
+                    fontSize = 14.sp
+                )
             }
         } else {
             LazyColumn(
@@ -257,118 +276,53 @@ private fun TransactionsContent(
     }
 }
 
-// ── Filter chip row ───────────────────────────────────────────────────────────
+// ── Dropdown filter (FIX #3) ──────────────────────────────────────────────────
 
 @Composable
-private fun FilterChipScroll(
+private fun FilterDropdown(
+    label: String,
     values: List<String>,
     selected: String,
     onSelect: (String) -> Unit
 ) {
-    androidx.compose.foundation.lazy.LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded         = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier         = Modifier.fillMaxWidth()
     ) {
-        items(values) { value ->
-            FilterChip(
-                value    = value,
-                selected = value == selected,
-                onClick  = { onSelect(value) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun FilterChip(value: String, selected: Boolean = false, onClick: () -> Unit = {}) {
-    Surface(
-        onClick   = onClick,
-        shape     = RoundedCornerShape(8.dp),
-        color     = if (selected) WiseFoxOrange else WiseFoxOrangePale.copy(alpha = 0.5f),
-        contentColor = if (selected) Color.White else WiseFoxOrangeDark
-    ) {
-        Text(
-            text = value,
-            fontSize = 12.sp,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
-    }
-}
-
-@Composable
-private fun FilterLabel(text: String) {
-    Text(
-        text = text,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Bold,
-        color = TextSecondary.copy(alpha = 0.8f),
-        modifier = Modifier.width(68.dp)
-    )
-}
-
-// ── Transaction card (shared by both screens) ─────────────────────────────────
-
-private val expenseColor = Color(0xFFE06030)
-private val incomeColor  = Color(0xFF4A9E6A)
-
-@Composable
-fun TransactionCard(
-    transaction: TransactionResponse,
-    showLedger: Boolean = false,
-    onClick: (() -> Unit)? = null
-) {
-    val isExpense  = transaction.type?.name == "EXPENSE"
-    val typeColor  = if (isExpense) expenseColor else incomeColor
-    val amountSign = if (isExpense) "-" else "+"
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
-        shape  = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
-    ) {
-        Row(
-            modifier = Modifier
+        OutlinedTextField(
+            value         = selected,
+            onValueChange = {},
+            readOnly      = true,
+            label         = { Text(label) },
+            trailingIcon  = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier      = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .menuAnchor(),
+            shape  = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor   = WiseFoxOrangeDark,
+                unfocusedBorderColor = WiseFoxOrangeDark.copy(alpha = 0.4f),
+                focusedLabelColor    = WiseFoxOrangeDark,
+                unfocusedLabelColor  = WiseFoxOrangeDark.copy(alpha = 0.7f),
+                cursorColor          = WiseFoxOrangeDark,
+                focusedTextColor     = Color(0xFF3A2A00),
+                unfocusedTextColor   = Color(0xFF3A2A00)
+            )
+        )
+        ExposedDropdownMenu(
+            expanded         = expanded,
+            onDismissRequest = { expanded = false }
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = transaction.category?.name ?: "OTHER",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
-                )
-                if (showLedger && transaction.ledgerName != null) {
-                    Text(
-                        text = transaction.ledgerName,
-                        fontSize = 11.sp,
-                        color = TextSecondary.copy(alpha = 0.7f)
-                    )
-                }
-                if (!transaction.note.isNullOrBlank()) {
-                    Text(
-                        text = transaction.note,
-                        fontSize = 11.sp,
-                        color = TextSecondary.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "$amountSign${"%.2f".format(transaction.amount ?: 0.0)}€",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = typeColor
-                )
-                Text(
-                    text = transaction.type?.name ?: "",
-                    fontSize = 10.sp,
-                    color = typeColor.copy(alpha = 0.8f),
-                    fontWeight = FontWeight.SemiBold
+            values.forEach { value ->
+                DropdownMenuItem(
+                    text    = { Text(value) },
+                    onClick = {
+                        onSelect(value)
+                        expanded = false
+                    }
                 )
             }
         }
@@ -391,14 +345,28 @@ private fun TransactionTabBar(
             modifier = Modifier.fillMaxWidth().padding(6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            TabPill(text = "Transactions", selected = activeTab == TransactionTab.TRANSACTIONS, modifier = Modifier.weight(1f)) { onTabSelected(TransactionTab.TRANSACTIONS) }
-            TabPill(text = "Statistics",   selected = activeTab == TransactionTab.STATISTICS,   modifier = Modifier.weight(1f)) { onTabSelected(TransactionTab.STATISTICS) }
+            TabPill(
+                text     = stringResource(R.string.transactions),
+                selected = activeTab == TransactionTab.TRANSACTIONS,
+                modifier = Modifier.weight(1f)
+            ) { onTabSelected(TransactionTab.TRANSACTIONS) }
+
+            TabPill(
+                text     = stringResource(R.string.statistics),
+                selected = activeTab == TransactionTab.STATISTICS,
+                modifier = Modifier.weight(1f)
+            ) { onTabSelected(TransactionTab.STATISTICS) }
         }
     }
 }
 
 @Composable
-private fun TabPill(text: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun TabPill(
+    text: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Surface(
         onClick  = onClick,
         modifier = modifier,
@@ -410,26 +378,29 @@ private fun TabPill(text: String, selected: Boolean, modifier: Modifier = Modifi
             fontSize = 15.sp,
             style = MaterialTheme.typography.labelLarge.copy(
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                color = if (selected) Color.White else TextSecondary.copy(alpha = 0.6f)
+                color      = if (selected) Color.White else TextSecondary.copy(alpha = 0.6f)
             ),
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)
+            modifier  = Modifier.fillMaxWidth().padding(vertical = 10.dp)
         )
     }
 }
 
-// ── Solo/Shared selector (local copy to avoid import conflict) ────────────────
+// ── Solo / Shared selector ────────────────────────────────────────────────────
 
 @Composable
 private fun SoloSharedSelectorTx(isShared: Boolean, onToggle: (Boolean) -> Unit) {
     Card(
-        shape  = RoundedCornerShape(50),
-        colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
+        shape    = RoundedCornerShape(50),
+        colors   = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
         modifier = Modifier.height(32.dp)
     ) {
-        Row(modifier = Modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
-            SelectorOptionTx("SOLO",   !isShared) { onToggle(false) }
-            SelectorOptionTx("SHARED", isShared)  { onToggle(true) }
+        Row(
+            modifier = Modifier.padding(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SelectorOptionTx(stringResource(R.string.solo_capital),   !isShared) { onToggle(false) }
+            SelectorOptionTx(stringResource(R.string.shared_capital),  isShared) { onToggle(true) }
         }
     }
 }
@@ -442,8 +413,88 @@ private fun SelectorOptionTx(text: String, isSelected: Boolean, onClick: () -> U
         color    = if (isSelected) WiseFoxOrange else Color.Transparent,
         modifier = Modifier.fillMaxHeight()
     ) {
-        Box(modifier = Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-            Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (isSelected) Color.White else Color.Black)
+        Box(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text       = text,
+                fontSize   = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color      = if (isSelected) Color.White else Color.Black
+            )
+        }
+    }
+}
+
+// ── Transaction card (public — reused by LedgerDetailScreen) ──────────────────
+
+private val expenseColor = Color(0xFFE06030)
+private val incomeColor  = Color(0xFF4A9E6A)
+
+@Composable
+fun TransactionCard(
+    transaction: TransactionResponse,
+    showLedger: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    val isExpense = transaction.type?.name == "EXPENSE"
+    val typeColor = if (isExpense) expenseColor else incomeColor
+    val sign      = if (isExpense) "-" else "+"
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .let { if (onClick != null) it.clickable { onClick() } else it },
+        shape  = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = transaction.category?.name
+                        ?.lowercase()
+                        ?.replaceFirstChar { it.uppercaseChar() }
+                        ?: stringResource(R.string.category_other),
+                    fontSize   = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = TextPrimary
+                )
+                if (showLedger && !transaction.ledgerName.isNullOrBlank()) {
+                    Text(
+                        text     = transaction.ledgerName,
+                        fontSize = 12.sp,
+                        color    = TextSecondary
+                    )
+                }
+                if (!transaction.note.isNullOrBlank()) {
+                    Text(
+                        text     = transaction.note,
+                        fontSize = 11.sp,
+                        color    = TextSecondary.copy(alpha = 0.8f)
+                    )
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text       = "$sign%.2f€".format(transaction.amount ?: 0.0),
+                    fontSize   = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = typeColor
+                )
+                Text(
+                    text       = transaction.type?.name ?: "",
+                    fontSize   = 10.sp,
+                    color      = typeColor.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -453,7 +504,6 @@ private fun SelectorOptionTx(text: String, isSelected: Boolean, onClick: () -> U
 @Composable
 private fun StatisticsContent(transactions: List<TransactionResponse>) {
 
-    // ── Aggregations ──────────────────────────────────────────────────────────
     val expenses = transactions.filter { it.type?.name == "EXPENSE" }
     val incomes  = transactions.filter { it.type?.name == "INCOME" }
 
@@ -461,13 +511,11 @@ private fun StatisticsContent(transactions: List<TransactionResponse>) {
     val totalIncome  = incomes .sumOf { it.amount ?: 0.0 }
     val net          = totalIncome - totalExpense
 
-    // By category (expenses only, sorted desc)
     val byCategory = expenses
         .groupBy { it.category?.name ?: "OTHER" }
         .map { (cat, list) -> cat to list.sumOf { it.amount ?: 0.0 } }
         .sortedByDescending { it.second }
 
-    // By date – last 7 days income vs expense
     val today = LocalDate.now()
     val last7 = (6 downTo 0).map { today.minusDays(it.toLong()) }
     val dailyExpense = last7.map { day ->
@@ -477,9 +525,7 @@ private fun StatisticsContent(transactions: List<TransactionResponse>) {
         incomes.filter { it.date == day }.sumOf { it.amount ?: 0.0 }.toFloat()
     }
     val dayLabels = last7.map { it.dayOfMonth.toString() }
-
-    // Top-3 expense categories for the highlight row
-    val top3 = byCategory.take(3)
+    val top3      = byCategory.take(3)
 
     val categoryColors = listOf(
         Color(0xFFE06030), Color(0xFFFFD97A), Color(0xFF4A9E6A),
@@ -494,108 +540,74 @@ private fun StatisticsContent(transactions: List<TransactionResponse>) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
 
-        // ── 1. Summary totals ──────────────────────────────────────────────
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
-            elevation = CardDefaults.cardElevation(2.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 18.dp, horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SummaryBlock("INCOME",   "+%.2f€".format(totalIncome),  Color(0xFF4A9E6A))
-                VerticalDividerLine()
-                SummaryBlock("EXPENSES", "-%.2f€".format(totalExpense), Color(0xFFE06030))
-                VerticalDividerLine()
-                SummaryBlock(
-                    label      = "NET",
-                    value      = "%+.2f€".format(net),
-                    valueColor = if (net >= 0) Color(0xFF4A9E6A) else Color(0xFFE06030)
-                )
-            }
+        // ── 1. Overview mini-cards ────────────────────────────────────────────
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatMiniCard(
+                modifier = Modifier.weight(1f),
+                label    = stringResource(R.string.earnings),
+                value    = "+%.2f€".format(totalIncome),
+                color    = incomeColor
+            )
+            StatMiniCard(
+                modifier = Modifier.weight(1f),
+                label    = stringResource(R.string.expenses),
+                value    = "-%.2f€".format(totalExpense),
+                color    = expenseColor
+            )
+            StatMiniCard(
+                modifier = Modifier.weight(1f),
+                label    = "NET",
+                value    = "%.2f€".format(net),
+                color    = if (net >= 0) incomeColor else expenseColor
+            )
         }
 
-        // ── 2. Pie chart – Income vs Expenses ─────────────────────────────
-        if (totalExpense > 0 || totalIncome > 0) {
-            val pieSlices = buildList {
-                if (totalExpense > 0) add(PieSlice("Expenses", totalExpense.toFloat(), Color(0xFFE06030)))
-                if (totalIncome  > 0) add(PieSlice("Income",   totalIncome .toFloat(), Color(0xFF4A9E6A)))
-            }
-            StatSectionCard(title = "Overview", subtitle = "Income vs Expenses") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    PieChartFull(slices = pieSlices, modifier = Modifier.size(130.dp))
-                    Spacer(modifier = Modifier.width(20.dp))
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        pieSlices.forEach { slice ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(12.dp)
-                                        .background(slice.color, shape = RoundedCornerShape(3.dp))
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Column {
-                                    Text(slice.label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                                    val pct = if ((totalExpense + totalIncome) > 0)
-                                        (slice.value / (totalExpense + totalIncome).toFloat()) * 100f else 0f
-                                    Text("%.1f%%".format(pct), fontSize = 11.sp, color = TextSecondary)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ── 3. Expenses by category – horizontal bar chart ────────────────
+        // ── 2. Expenses by category – horizontal bars ─────────────────────────
         if (byCategory.isNotEmpty()) {
-            StatSectionCard(title = "Expenses by Category", subtitle = "All time breakdown") {
+            StatSectionCard(
+                title    = stringResource(R.string.filter_by_category),
+                subtitle = stringResource(R.string.where_most_money_goes)
+            ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     val maxVal = byCategory.maxOfOrNull { it.second } ?: 1.0
                     byCategory.forEachIndexed { index, (cat, amount) ->
                         val fraction = (amount / maxVal).toFloat().coerceIn(0f, 1f)
-                        val color = categoryColors[index % categoryColors.size]
+                        val color    = categoryColors[index % categoryColors.size]
                         Column {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = cat.lowercase().replaceFirstChar { it.uppercaseChar() },
-                                    fontSize = 12.sp,
+                                    text       = cat.lowercase().replaceFirstChar { it.uppercaseChar() },
+                                    fontSize   = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = TextPrimary
+                                    color      = TextPrimary
                                 )
                                 Text(
-                                    text = "%.2f€".format(amount),
-                                    fontSize = 12.sp,
+                                    text       = "%.2f€".format(amount),
+                                    fontSize   = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = color
+                                    color      = color
                                 )
                             }
                             Spacer(modifier = Modifier.height(3.dp))
+                            // FIX errors 61/62 & 535/536: clip() and background() belong on
+                            // Modifier (Compose), NOT inside a Canvas DrawScope.
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(8.dp)
-                                    .background(color.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(color.copy(alpha = 0.15f))
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth(fraction)
                                         .fillMaxHeight()
-                                        .background(color, RoundedCornerShape(4.dp))
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(color)
                                 )
                             }
                         }
@@ -604,33 +616,38 @@ private fun StatisticsContent(transactions: List<TransactionResponse>) {
             }
         }
 
-        // ── 4. Last 7 days – grouped bar chart ────────────────────────────
+        // ── 3. Last 7 days – grouped bar chart ────────────────────────────────
         val hasRecentData = (dailyExpense + dailyIncome).any { it > 0f }
         if (hasRecentData) {
-            StatSectionCard(title = "Last 7 Days", subtitle = "Daily income & expenses") {
+            StatSectionCard(
+                title    = stringResource(R.string.last_7_days),
+                subtitle = stringResource(R.string.daily_income_expenses)
+            ) {
                 Spacer(modifier = Modifier.height(8.dp))
-                // Legend
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    LegendDot(Color(0xFFE06030), "Expenses")
-                    LegendDot(Color(0xFF4A9E6A), "Income")
+                    LegendDot(expenseColor, stringResource(R.string.expenses))
+                    LegendDot(incomeColor,  stringResource(R.string.earnings))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 GroupedBarChart(
-                    labels       = dayLabels,
-                    series1      = dailyExpense,
-                    series2      = dailyIncome,
-                    color1       = Color(0xFFE06030),
-                    color2       = Color(0xFF4A9E6A),
-                    modifier     = Modifier
+                    labels   = dayLabels,
+                    series1  = dailyExpense,
+                    series2  = dailyIncome,
+                    color1   = expenseColor,
+                    color2   = incomeColor,
+                    modifier = Modifier
                         .fillMaxWidth()
                         .height(140.dp)
                 )
             }
         }
 
-        // ── 5. Top spends highlight ───────────────────────────────────────
+        // ── 4. Top-3 spending categories ──────────────────────────────────────
         if (top3.isNotEmpty()) {
-            StatSectionCard(title = "Top Spending Categories", subtitle = "Where most money goes") {
+            StatSectionCard(
+                title    = stringResource(R.string.top_spending_categories),
+                subtitle = stringResource(R.string.where_most_money_goes)
+            ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 top3.forEachIndexed { i, (cat, amount) ->
                     val medals = listOf("🥇", "🥈", "🥉")
@@ -639,23 +656,23 @@ private fun StatisticsContent(transactions: List<TransactionResponse>) {
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment     = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(medals[i], fontSize = 18.sp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = cat.lowercase().replaceFirstChar { it.uppercaseChar() },
-                                fontSize = 14.sp,
+                                text       = cat.lowercase().replaceFirstChar { it.uppercaseChar() },
+                                fontSize   = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = TextPrimary
+                                color      = TextPrimary
                             )
                         }
                         Text(
-                            text = "%.2f€".format(amount),
-                            fontSize = 14.sp,
+                            text       = "%.2f€".format(amount),
+                            fontSize   = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = categoryColors[i]
+                            color      = categoryColors[i]
                         )
                     }
                     if (i < top3.lastIndex) HorizontalDivider(color = TextSecondary.copy(alpha = 0.15f))
@@ -669,7 +686,11 @@ private fun StatisticsContent(transactions: List<TransactionResponse>) {
                 modifier = Modifier.fillMaxWidth().padding(48.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No transactions to display", color = TextSecondary, fontSize = 14.sp)
+                Text(
+                    text     = stringResource(R.string.no_transactions_to_display),
+                    color    = TextSecondary,
+                    fontSize = 14.sp
+                )
             }
         }
 
@@ -677,7 +698,29 @@ private fun StatisticsContent(transactions: List<TransactionResponse>) {
     }
 }
 
-// ── Shared card wrapper ───────────────────────────────────────────────────────
+// ── Stat mini card ────────────────────────────────────────────────────────────
+
+@Composable
+private fun StatMiniCard(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String,
+    color: Color
+) {
+    Card(
+        modifier = modifier,
+        shape    = RoundedCornerShape(14.dp),
+        colors   = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
+            Text(label, fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color)
+        }
+    }
+}
+
+// ── Shared stat card wrapper ──────────────────────────────────────────────────
 
 @Composable
 private fun StatSectionCard(
@@ -687,76 +730,37 @@ private fun StatSectionCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
-        elevation = CardDefaults.cardElevation(2.dp)
+        shape    = RoundedCornerShape(16.dp),
+        colors   = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
-            Text(title,    fontSize = 15.sp, fontWeight = FontWeight.Bold,    color = TextPrimary)
-            Text(subtitle, fontSize = 11.sp, fontWeight = FontWeight.Normal,  color = TextSecondary)
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Text(title,    fontSize = 14.sp, fontWeight = FontWeight.Bold, color = WiseFoxOrangeDark)
+            Text(subtitle, fontSize = 11.sp, color = TextSecondary)
             content()
         }
     }
 }
 
-// ── Summary block ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun SummaryBlock(label: String, value: String, valueColor: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 0.8.sp)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = valueColor)
-    }
-}
-
-@Composable
-private fun VerticalDividerLine() {
-    Box(
-        modifier = Modifier
-            .width(1.dp)
-            .height(40.dp)
-            .background(TextSecondary.copy(alpha = 0.2f))
-    )
-}
+// ── Legend dot ────────────────────────────────────────────────────────────────
 
 @Composable
 private fun LegendDot(color: Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(label, fontSize = 11.sp, color = TextSecondary, fontWeight = FontWeight.SemiBold)
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(label, fontSize = 11.sp, color = TextSecondary)
     }
 }
 
-// ── Pie chart ─────────────────────────────────────────────────────────────────
-
-private data class PieSlice(val label: String, val value: Float, val color: Color)
-
-@Composable
-private fun PieChartFull(slices: List<PieSlice>, modifier: Modifier = Modifier) {
-    val total = slices.sumOf { it.value.toDouble() }.toFloat().takeIf { it > 0f } ?: 1f
-    Canvas(modifier = modifier) {
-        var startAngle = -90f
-        val stroke = size.width * 0.20f
-        val inset  = stroke / 2f
-        slices.forEach { slice ->
-            val sweep = (slice.value / total) * 360f
-            drawArc(
-                color      = slice.color,
-                startAngle = startAngle,
-                sweepAngle = sweep - 2f,   // small gap between slices
-                useCenter  = false,
-                topLeft    = Offset(inset, inset),
-                size       = Size(size.width - stroke, size.height - stroke),
-                style      = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-            )
-            startAngle += sweep
-        }
-    }
-}
-
-// ── Grouped bar chart (last 7 days) ──────────────────────────────────────────
+// ── Grouped bar chart ─────────────────────────────────────────────────────────
+// FIX errors 61/535: only Canvas drawing primitives (drawRect, drawText) are
+// used inside DrawScope. Modifier.clip() and Modifier.background() are Compose
+// Modifier extensions and must NOT be called inside a Canvas block.
 
 @Composable
 private fun GroupedBarChart(
@@ -767,60 +771,47 @@ private fun GroupedBarChart(
     color2:   Color,
     modifier: Modifier = Modifier
 ) {
-    val textMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val textMeasurer = rememberTextMeasurer()
     val maxVal = (series1 + series2).maxOrNull()?.takeIf { it > 0f } ?: 1f
 
     Canvas(modifier = modifier) {
-        val n         = labels.size
-        val labelH    = 22.dp.toPx()
-        val chartH    = size.height - labelH
-        val slotW     = size.width / n
-        val barW      = slotW * 0.30f
-        val gap       = slotW * 0.04f
-        val axisColor = Color(0xFFCCCCCC)
+        val n = labels.size
+        if (n == 0) return@Canvas
+        val groupW  = size.width / n
+        val barW    = groupW / 3f
+        val bottomY = size.height - 20f   // leave room for day label below
 
-        // Baseline
-        drawLine(axisColor, Offset(0f, chartH), Offset(size.width, chartH), 1.5f)
+        labels.forEachIndexed { i, label ->
+            val cx = groupW * i + groupW / 2f
 
-        repeat(n) { i ->
-            val slotLeft = i * slotW
-            val centerX  = slotLeft + slotW / 2f
+            val h1 = (series1[i] / maxVal) * (bottomY - 4f)
+            val h2 = (series2[i] / maxVal) * (bottomY - 4f)
 
-            // Bar 1 – expense
-            val h1 = (series1[i] / maxVal) * chartH
+            // Expense bar — left of centre
             if (h1 > 0f) {
                 drawRect(
                     color   = color1,
-                    topLeft = Offset(centerX - barW - gap / 2f, chartH - h1),
-                    size    = Size(barW, h1)
+                    topLeft = Offset(cx - barW, bottomY - h1),
+                    size    = Size(barW - 1f, h1)
                 )
             }
-
-            // Bar 2 – income
-            val h2 = (series2[i] / maxVal) * chartH
+            // Income bar — right of centre
             if (h2 > 0f) {
                 drawRect(
                     color   = color2,
-                    topLeft = Offset(centerX + gap / 2f, chartH - h2),
-                    size    = Size(barW, h2)
+                    topLeft = Offset(cx + 1f, bottomY - h2),
+                    size    = Size(barW - 1f, h2)
                 )
             }
 
             // Day label
-            val measured = textMeasurer.measure(
-                androidx.compose.ui.text.AnnotatedString(labels[i]),
-                style = androidx.compose.ui.text.TextStyle(
-                    fontSize   = 10.sp,
-                    color      = Color(0xFF888888),
-                    fontWeight = FontWeight.SemiBold
-                )
+            val layout = textMeasurer.measure(
+                text  = AnnotatedString(label),
+                style = TextStyle(fontSize = 9.sp, color = Color(0xFF7A6A4A))
             )
             drawText(
-                measured,
-                topLeft = Offset(
-                    centerX - measured.size.width / 2f,
-                    chartH + 4.dp.toPx()
-                )
+                textLayoutResult = layout,
+                topLeft          = Offset(cx - layout.size.width / 2f, bottomY + 2f)
             )
         }
     }

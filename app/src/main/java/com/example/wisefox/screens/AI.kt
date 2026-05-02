@@ -12,23 +12,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.wisefox.R
 import com.example.wisefox.ui.theme.*
-
-private val IS_PREMIUM = false
-
-private val genericAdvices = listOf(
-    "ADVICE 1" to "Try to save at least 10% of your monthly income.",
-    "ADVICE 2" to "Avoid impulse purchases by waiting 24 hours before buying.",
-    "ADVICE 3" to "Track every expense, even the small ones — they add up fast."
-)
+import com.example.wisefox.utils.SessionManager
 
 @Composable
 fun AIScreen(navController: NavController) {
-    val isPremium = IS_PREMIUM   // reemplaza con tu fuente de verdad
+    val isPremium = SessionManager.isPremium()
 
     Column(
         modifier = Modifier
@@ -37,7 +32,7 @@ fun AIScreen(navController: NavController) {
     ) {
         // ── Header ──────────────────────────────────────────
         Text(
-            text = "Artificial Intelligence",
+            text = stringResource(R.string.ai_title),
             fontSize = 22.sp,
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
@@ -48,113 +43,115 @@ fun AIScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         if (isPremium) {
-            // ── PREMIUM: lista de consejos reales ────────────
             PremiumAdviceList()
         } else {
-            // ── MEMBER: consejos borrosos + paywall ──────────
             MemberPaywall()
         }
     }
 }
 
 // ── Premium ──────────────────────────────────────────────────────
-
 @Composable
 private fun PremiumAdviceList() {
+    val label = stringResource(R.string.ai_advice_label)
+    val advices = listOf(
+        "$label 1" to stringResource(R.string.advice_save_10pct),
+        "$label 2" to stringResource(R.string.advice_wait_24h),
+        "$label 3" to stringResource(R.string.advice_track_small)
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Aquí pondrás los consejos reales generados por tu IA
-        AdviceCard(title = "ADVICE 1", body = "Use less money")
-        AdviceCard(title = "ADVICE 2", body = "Do not waste money")
+        advices.forEach { (title, body) ->
+            AdviceCard(title = title, body = body)
+        }
     }
 }
 
-// ── Member paywall ────────────────────────────────────────────────
-
+// ── Member paywall ──────────────────────────────────────────────
 @Composable
 private fun MemberPaywall() {
-    Box(modifier = Modifier.fillMaxSize()) {
+    val label = stringResource(R.string.ai_advice_label)
+    val previewAdvices = listOf(
+        "$label 1" to stringResource(R.string.advice_save_10pct),
+        "$label 2" to stringResource(R.string.advice_wait_24h),
+        "$label 3" to stringResource(R.string.advice_track_small)
+    )
 
-        // Consejos genéricos borrosos de fondo
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .blur(6.dp),           // efecto blur sobre los consejos
+                .blur(6.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            genericAdvices.forEach { (title, body) ->
+            previewAdvices.forEach { (title, body) ->
                 AdviceCard(title = title, body = body)
             }
         }
 
-        // Overlay gris semi-transparente
-        Box(
+        // Paywall card overlay
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xAABDBDBD))   // gris con ~67 % opacidad
-        )
-
-        // Mensaje + botón centrado
-        Column(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxWidth()
+                .padding(24.dp)
+                .align(Alignment.Center),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
         ) {
-            Text(
-                text = "You are not able\nto use this feature",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.Black,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                lineHeight = 24.sp
-            )
-
-            Button(
-                onClick = { /* navegar a pantalla de upgrade */ },
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Upgrade to Premium",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    text = stringResource(R.string.ai_paywall_message),
+                    color = WiseFoxOrangeDark,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { /* TODO: navigate to upgrade */ },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = WiseFoxOrangeDark)
+                ) {
+                    Text(
+                        text = stringResource(R.string.ai_paywall_cta),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
 }
 
-// ── Shared composable ─────────────────────────────────────────────
-
 @Composable
-fun AdviceCard(title: String, body: String) {
+private fun AdviceCard(title: String, body: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = WiseFoxOrangeDark
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = body,
-                fontSize = 13.sp,
-                color = Color.DarkGray
+                fontSize = 14.sp,
+                color = TextPrimary
             )
         }
     }

@@ -40,6 +40,7 @@ import com.example.wisefox.viewmodels.LedgerUiModel
 import androidx.compose.foundation.background
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.wisefox.utils.SessionManager
 
 private val expensesColor = Color(0xFFE06030)
 private val earningsColor = Color(0xFF4A9E6A)
@@ -65,6 +66,8 @@ fun HomeScreen(
     val activeLedgers = if (isShared) sharedLedgers else soloLedgers
     val totalEarnings = activeLedgers.sumOf { it.totalIncome }
     val totalExpenses = activeLedgers.sumOf { it.totalExpense }
+    val displayName = SessionManager.getName().ifBlank { SessionManager.getUsername() }
+
 
     // React to crud results
     LaunchedEffect(crudState) {
@@ -103,7 +106,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = stringResource(R.string.welcome) + " User!",
+                        text = stringResource(R.string.welcome) + " $displayName!",
                         fontSize = 30.sp,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,

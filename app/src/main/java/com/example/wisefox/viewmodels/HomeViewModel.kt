@@ -174,4 +174,8 @@ class HomeViewModel : ViewModel() {
     }
 
     fun resetCrudState() { _crudState.value = LedgerCrudState.Idle }
+    fun findLedgerById(id: Long): LedgerResponse? {
+        val all = _soloLedgers.value + _sharedLedgers.value
+        return all.firstOrNull { it.ledger.id == id }?.ledger
+    }
 }

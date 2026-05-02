@@ -37,13 +37,55 @@
     <string name="shared_capital">SHARED</string>
     <string name="from_capital">FROM</string>
     <string name="to_capital">TO</string>
+    <string name="home_user_default">User</string>
+    <string name="no_ledgers_yet">No ledgers yet. Tap + to create one.</string>
+    <string name="no_shared_ledgers">No shared ledgers</string>
+    <string name="default_tip">Set up an automatic 5%% saving rule this week.</string>
+
+    <!-- Ledger dialog -->
+    <string name="ledger_name">Ledger name</string>
+    <string name="currency_label">Currency</string>
+    <string name="description_optional">Description (optional)</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="delete_ledger_title">Delete ledger?</string>
+    <string name="delete_ledger_message">This action cannot be undone.</string>
+    <string name="create_ledger">Create ledger</string>
+    <string name="edit_ledger">Edit ledger</string>
 
     <!-- Transactions -->
     <string name="filter_by_ledger">Filter by Ledger</string>
     <string name="filter_by_category">Filter by Category</string>
+    <string name="filter_all">All</string>
     <string name="add_transaction">Add transaction</string>
     <string name="transactions">Transactions</string>
     <string name="statistics">Statistics</string>
+    <string name="no_transactions_found">No transactions found</string>
+    <string name="no_transactions_to_display">No transactions to display</string>
+    <string name="last_7_days">Last 7 Days</string>
+    <string name="daily_income_expenses">Daily income &amp; expenses</string>
+    <string name="top_spending_categories">Top Spending Categories</string>
+    <string name="where_most_money_goes">Where most money goes</string>
+    <string name="today_label">Today</string>
+    <string name="yesterday_label">Yesterday</string>
+    <string name="unknown_label">Unknown</string>
+    <string name="category_other">Other</string>
+    <string name="income_capital">INCOME</string>
+    <string name="expense_capital">EXPENSE</string>
+    <string name="amount">Amount</string>
+    <string name="note_optional">Note (optional)</string>
+    <string name="select_ledger">Select ledger</string>
+    <string name="select_category">Select category</string>
+    <string name="confirm">Confirm</string>
+
+    <!-- AI -->
+    <string name="ai_title">Artificial Intelligence</string>
+    <string name="ai_advice_label">ADVICE</string>
+    <string name="ai_paywall_message">Unlock AI insights with Premium</string>
+    <string name="ai_paywall_cta">Upgrade to Premium</string>
+    <string name="advice_save_10pct">Try to save at least 10%% of your monthly income.</string>
+    <string name="advice_wait_24h">Avoid impulse purchases by waiting 24 hours before buying.</string>
+    <string name="advice_track_small">Track every expense, even the small ones — they add up fast.</string>
 
     <!-- Profile -->
     <string name="language_capital">LANGUAGE</string>
@@ -56,6 +98,7 @@
     <string name="standard_member">STANDARD</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="logout">Log Out</string>
+    <string name="logout_confirm_message">Are you sure you want to log out of your account?</string>
     <string name="back">Back</string>
 
     <!-- Share ledger dialog -->

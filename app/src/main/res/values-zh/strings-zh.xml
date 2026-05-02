@@ -37,13 +37,55 @@
     <string name="shared_capital">共享</string>
     <string name="from_capital">从</string>
     <string name="to_capital">到</string>
+    <string name="home_user_default">用户</string>
+    <string name="no_ledgers_yet">还没有账本，点击 + 创建一个。</string>
+    <string name="no_shared_ledgers">没有共享账本</string>
+    <string name="default_tip">本周设置一个 5%% 的自动储蓄规则。</string>
+
+    <!-- Ledger dialog -->
+    <string name="ledger_name">账本名称</string>
+    <string name="currency_label">币种</string>
+    <string name="description_optional">描述（可选）</string>
+    <string name="save">保存</string>
+    <string name="delete">删除</string>
+    <string name="delete_ledger_title">删除账本？</string>
+    <string name="delete_ledger_message">此操作无法撤销。</string>
+    <string name="create_ledger">创建账本</string>
+    <string name="edit_ledger">编辑账本</string>
 
     <!-- Transactions -->
     <string name="filter_by_ledger">按账本筛选</string>
     <string name="filter_by_category">按类别筛选</string>
+    <string name="filter_all">全部</string>
     <string name="add_transaction">添加交易</string>
     <string name="transactions">交易记录</string>
     <string name="statistics">统计</string>
+    <string name="no_transactions_found">未找到交易</string>
+    <string name="no_transactions_to_display">没有可显示的交易</string>
+    <string name="last_7_days">最近 7 天</string>
+    <string name="daily_income_expenses">每日收入与支出</string>
+    <string name="top_spending_categories">最高支出类别</string>
+    <string name="where_most_money_goes">钱花在哪里</string>
+    <string name="today_label">今天</string>
+    <string name="yesterday_label">昨天</string>
+    <string name="unknown_label">未知</string>
+    <string name="category_other">其他</string>
+    <string name="income_capital">收入</string>
+    <string name="expense_capital">支出</string>
+    <string name="amount">金额</string>
+    <string name="note_optional">备注（可选）</string>
+    <string name="select_ledger">选择账本</string>
+    <string name="select_category">选择类别</string>
+    <string name="confirm">确认</string>
+
+    <!-- AI -->
+    <string name="ai_title">人工智能</string>
+    <string name="ai_advice_label">建议</string>
+    <string name="ai_paywall_message">升级 Premium 解锁 AI 建议</string>
+    <string name="ai_paywall_cta">升级 Premium</string>
+    <string name="advice_save_10pct">尝试每月至少存下收入的 10%%。</string>
+    <string name="advice_wait_24h">购买前先等 24 小时，避免冲动消费。</string>
+    <string name="advice_track_small">记录每一笔花销，再小也要记 — 累积起来很快。</string>
 
     <!-- Profile -->
     <string name="language_capital">语言</string>
@@ -56,6 +98,7 @@
     <string name="standard_member">普通用户</string>
     <string name="edit_profile">编辑资料</string>
     <string name="logout">退出登录</string>
+    <string name="logout_confirm_message">确定要退出登录吗？</string>
     <string name="back">返回</string>
 
     <!-- Share ledger dialog -->
