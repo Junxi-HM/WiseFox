@@ -133,6 +133,8 @@ private fun MemberPaywall() {
     }
 }
 
+// ── Shared composable ─────────────────────────────────────────────
+
 @Composable
 private fun AdviceCard(title: String, body: String) {
     Card(

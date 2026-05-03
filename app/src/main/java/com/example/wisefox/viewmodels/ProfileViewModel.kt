@@ -51,7 +51,9 @@ class ProfileViewModel : ViewModel() {
     val updateProfileState: StateFlow<UpdateProfileState> = _updateProfileState
 
     init {
-        loadProfile()
+        if (SessionManager.getUserId() != -1L) {
+            loadProfile()
+        }
     }
 
     fun loadProfile() {

@@ -42,22 +42,24 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         startDestination = Screen.Login.route
     ) {
 
-        // ── Login ─────────────────────────────────────────────────────────────
+// ── Login ─────────────────────────────────────────────────────────────
         composable(Screen.Login.route) {
             LoginScreen(
-                onLoginSuccess       = {
+                onLoginSuccess = {
+                    homeViewModel.loadLedgers()
+                    profileViewModel.loadProfile()
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
                 onNavigateToRegister = { /* TODO */ },
-                viewModel            = loginViewModel
+                viewModel = loginViewModel
             )
         }
 
-        // ── Google Register ───────────────────────────────────────────────────
+// ── Google Register ───────────────────────────────────────────────────
         composable(
-            route     = Screen.GoogleRegister.route,
+            route = Screen.GoogleRegister.route,
             arguments = listOf(
                 navArgument("googleToken") { type = NavType.StringType },
                 navArgument("email")       { type = NavType.StringType }
@@ -66,10 +68,12 @@ fun WiseFoxNavGraph(navController: NavHostController) {
             val googleToken = backStackEntry.arguments?.getString("googleToken") ?: ""
             val email       = backStackEntry.arguments?.getString("email") ?: ""
             GoogleRegisterScreen(
-                googleToken       = googleToken,
-                email             = email,
-                viewModel         = loginViewModel,
+                googleToken  = googleToken,
+                email        = email,
+                viewModel    = loginViewModel,
                 onRegisterSuccess = {
+                    homeViewModel.loadLedgers()       // ← 新增
+                    profileViewModel.loadProfile()    // ← 新增
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }

@@ -52,8 +52,6 @@ class HomeViewModel : ViewModel() {
     private val _crudState = MutableStateFlow<LedgerCrudState>(LedgerCrudState.Idle)
     val crudState: StateFlow<LedgerCrudState> = _crudState
 
-    init { loadLedgers() }
-
     // ── Load ──────────────────────────────────────────────────────────────────
 
     fun loadLedgers() {
