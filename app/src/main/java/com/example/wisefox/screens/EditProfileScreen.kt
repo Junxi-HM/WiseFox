@@ -112,37 +112,36 @@ fun EditProfileScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // ── Header row ───────────────────────────────────────────────────────
+        // ── Header with back arrow ─────────────────────────────────────────
         Row(
-            modifier          = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
-                    imageVector        = Icons.Default.ArrowBack,
+                    imageVector        = Icons.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
                     tint               = WiseFoxOrangeDark
                 )
             }
-            Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text  = stringResource(R.string.edit_profile).uppercase(),
-                fontSize = 22.sp,
-                style    = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight    = FontWeight.ExtraBold,
-                    color         = WiseFoxOrangeDark,
-                    letterSpacing = 2.sp
-                )
+                text       = stringResource(R.string.edit_profile),
+                fontSize   = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color      = WiseFoxOrangeDark,
+                modifier   = Modifier.padding(start = 8.dp)
             )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ── Avatar picker card ───────────────────────────────────────────────
+        // ── Profile photo section ────────────────────────────────────────────
+        SectionLabel(stringResource(R.string.profile_photo))
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape    = RoundedCornerShape(20.dp),
-            colors   = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
+            colors   = CardDefaults.cardColors(containerColor = SectionCardBg)
         ) {
             Column(
                 modifier            = Modifier
@@ -150,39 +149,26 @@ fun EditProfileScreen(
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text  = stringResource(R.string.profile_photo),
-                    fontSize = 13.sp,
-                    style    = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight    = FontWeight.Bold,
-                        color         = TextSecondary,
-                        letterSpacing = 1.sp
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Box(
-                    modifier         = Modifier
-                        .size(100.dp)
+                    modifier        = Modifier
+                        .size(110.dp)
                         .clickable { imagePicker.launch("image/*") },
                     contentAlignment = Alignment.BottomEnd
                 ) {
-                    // Avatar image or initial letter
                     if (avatarBitmap != null) {
                         Image(
                             bitmap             = avatarBitmap!!.asImageBitmap(),
                             contentDescription = "Avatar",
                             contentScale       = ContentScale.Crop,
                             modifier           = Modifier
-                                .size(100.dp)
+                                .size(110.dp)
                                 .clip(CircleShape)
                                 .border(3.dp, WiseFoxOrangeDark, CircleShape)
                         )
                     } else {
                         Box(
-                            modifier         = Modifier
-                                .size(100.dp)
+                            modifier        = Modifier
+                                .size(110.dp)
                                 .clip(CircleShape)
                                 .background(WiseFoxOrangePale)
                                 .border(3.dp, WiseFoxOrangeDark, CircleShape),
@@ -197,7 +183,7 @@ fun EditProfileScreen(
                         }
                     }
 
-                    // Camera badge — Image preserves original drawable colors
+                    // Camera badge
                     Box(
                         modifier         = Modifier
                             .size(32.dp)
@@ -297,25 +283,26 @@ fun EditProfileScreen(
                     modifier      = Modifier.fillMaxWidth(),
                     visualTransformation = if (passwordVisible)
                         VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    leadingIcon   = {
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Image(
+                                painter            = painterResource(
+                                    if (passwordVisible) R.drawable.ic_eye_off
+                                    else R.drawable.ic_eye
+                                ),
+                                contentDescription = null,
+                                modifier           = Modifier.size(20.dp)
+                            )
+                        }
+                    },
+                    leadingIcon = {
                         Image(
-                            painter            = painterResource(R.drawable.ic_edit),
+                            painter            = painterResource(R.drawable.ic_eye_off),
                             contentDescription = null,
                             modifier           = Modifier.size(22.dp)
                         )
                     },
-                    trailingIcon  = {
-                        Image(
-                            painter            = painterResource(
-                                if (passwordVisible) R.drawable.ic_eye_off else R.drawable.ic_eye
-                            ),
-                            contentDescription = null,
-                            modifier           = Modifier
-                                .size(24.dp)
-                                .clickable { passwordVisible = !passwordVisible }
-                        )
-                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor   = WiseFoxOrangeDark,
                         unfocusedBorderColor = WiseFoxOrangeDark.copy(alpha = 0.4f),
@@ -336,7 +323,7 @@ fun EditProfileScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // ── Error message ────────────────────────────────────────────────────
         if (updateState is UpdateProfileState.Error) {
@@ -354,12 +341,15 @@ fun EditProfileScreen(
         // ── Save button ──────────────────────────────────────────────────────
         Button(
             onClick  = {
+                // FIX #4: when password field is left blank, send null so the
+                //          repository omits the multipart Part. Backend keeps the
+                //          existing bcrypt hash → no more "Update Error 500".
                 viewModel.updateProfile(
                     name     = name.trim(),
                     surname  = surname.trim(),
                     username = username.trim(),
                     email    = email.trim(),
-                    password = password,
+                    password = password.takeIf { it.isNotBlank() },
                     pfpBytes = avatarBytes
                 )
             },

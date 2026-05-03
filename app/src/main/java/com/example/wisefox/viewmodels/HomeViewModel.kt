@@ -52,8 +52,6 @@ class HomeViewModel : ViewModel() {
     private val _crudState = MutableStateFlow<LedgerCrudState>(LedgerCrudState.Idle)
     val crudState: StateFlow<LedgerCrudState> = _crudState
 
-    init { loadLedgers() }
-
     // ── Load ──────────────────────────────────────────────────────────────────
 
     fun loadLedgers() {
@@ -174,4 +172,8 @@ class HomeViewModel : ViewModel() {
     }
 
     fun resetCrudState() { _crudState.value = LedgerCrudState.Idle }
+    fun findLedgerById(id: Long): LedgerResponse? {
+        val all = _soloLedgers.value + _sharedLedgers.value
+        return all.firstOrNull { it.ledger.id == id }?.ledger
+    }
 }

@@ -14,17 +14,17 @@ import kotlinx.coroutines.launch
 
 // ── UI State ──────────────────────────────────────────────────────────────────
 sealed class LoginUiState {
-    object Idle             : LoginUiState()
-    object Loading          : LoginUiState()
-    object Success          : LoginUiState()
+    object Idle           : LoginUiState()
+    object Loading        : LoginUiState()
+    object Success        : LoginUiState()
     data class EmailError   (val message: String) : LoginUiState()
     data class PasswordError(val message: String) : LoginUiState()
     data class ApiError     (val message: String) : LoginUiState()
-    /** Email not in DB → suggest Google register */
-    object SuggestGoogle    : LoginUiState()
-    /** Google new user → needs to enter verification code */
+    /** 手写登录时 email 不在 DB → 提示用 Google 注册 */
+    object SuggestGoogle  : LoginUiState()
+    /** Google 新用户 → 需要输入验证码 */
     data class NeedVerifyCode(val email: String) : LoginUiState()
-    /** Code verified → needs to complete registration */
+    /** 验证码通过 → 需要完成注册 */
     data class NeedRegister(val googleToken: String, val email: String) : LoginUiState()
 }
 
@@ -33,13 +33,14 @@ class LoginViewModel(
     private val repo: AuthRepository = AuthRepository()
 ) : ViewModel() {
 
+    // Form fields
     var email    by mutableStateOf("")
     var password by mutableStateOf("")
 
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState: StateFlow<LoginUiState> = _uiState
 
-    // ── Email + password login ────────────────────────────────────────────────
+    // ── 手写登录 ──────────────────────────────────────────────────────────────
     fun login() {
         if (email.isBlank()) {
             _uiState.value = LoginUiState.EmailError("Please enter your email")
@@ -58,26 +59,9 @@ class LoginViewModel(
         viewModelScope.launch {
             try {
                 val response = repo.login(email.trim(), password)
-
-                // ✅ Save token
                 response.token?.let { SessionManager.saveToken(it) }
-
-                // ✅ Save core user info (ID is critical!)
-                SessionManager.saveUser(
-                    id       = response.id,
-                    username = response.username,
-                    email    = response.email
-                )
-
-                // ✅ Save extended info
-                SessionManager.saveUserExtended(
-                    name    = response.name,
-                    surname = response.surname,
-                    role    = response.role ?: "USER"
-                )
-
+                SessionManager.saveUser(response.id, response.username, response.email)
                 _uiState.value = LoginUiState.Success
-
             } catch (e: Exception) {
                 if (e.message == "EMAIL_NOT_FOUND") {
                     _uiState.value = LoginUiState.SuggestGoogle
@@ -98,11 +82,12 @@ class LoginViewModel(
                 val result = repo.googleLogin(idToken)
                 when (result["status"]) {
                     "OK" -> {
-                        android.util.Log.d("LOGIN_DEBUG", "Google response: $result")
-                        // ✅ Existing Google user — save everything
                         result["token"]?.let { SessionManager.saveToken(it) }
 
-                        val userId = result["userId"]?.toLongOrNull() ?: -1L
+                        val userId = result["userId"]?.toLongOrNull()
+                            ?: result["token"]?.let { parseUserIdFromJwt(it) }
+                            ?: -1L
+
                         SessionManager.saveUser(
                             id       = userId,
                             username = result["username"] ?: "",
@@ -113,7 +98,6 @@ class LoginViewModel(
                             surname = result["surname"] ?: "",
                             role    = result["role"] ?: "USER"
                         )
-
                         _uiState.value = LoginUiState.Success
                     }
                     "VERIFY_REQUIRED" -> {
@@ -160,10 +144,13 @@ class LoginViewModel(
             try {
                 val result = repo.registerWithGoogle(googleToken, username, name, surname, password)
 
-                // ✅ New Google user — save everything after registration
                 result["token"]?.let { SessionManager.saveToken(it) }
 
-                val userId = result["userId"]?.toLongOrNull() ?: -1L
+                // ✅ 从 token JWT payload 解析 userId 作为 fallback
+                val userId = result["userId"]?.toLongOrNull()
+                    ?: result["token"]?.let { parseUserIdFromJwt(it) }
+                    ?: -1L
+
                 SessionManager.saveUser(
                     id       = userId,
                     username = result["username"] ?: username,
@@ -184,8 +171,21 @@ class LoginViewModel(
             }
         }
     }
-
     fun resetState() {
         _uiState.value = LoginUiState.Idle
+    }
+    private fun parseUserIdFromJwt(token: String): Long? {
+        return try {
+            // JWT 格式: header.payload.signature，payload 是 Base64
+            val payload = token.split(".")[1]
+            // 补齐 Base64 padding
+            val padded = payload + "=".repeat((4 - payload.length % 4) % 4)
+            val decoded = String(android.util.Base64.decode(padded, android.util.Base64.URL_SAFE))
+            // payload 是 JSON，取 "sub" 字段
+            val json = org.json.JSONObject(decoded)
+            json.getString("sub").toLongOrNull()
+        } catch (e: Exception) {
+            null
+        }
     }
 }

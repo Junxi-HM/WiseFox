@@ -37,13 +37,55 @@
     <string name="shared_capital">COMPARTIDO</string>
     <string name="from_capital">DESDE</string>
     <string name="to_capital">HASTA</string>
+    <string name="home_user_default">Usuario</string>
+    <string name="no_ledgers_yet">Aún no hay libros. Toca + para crear uno.</string>
+    <string name="no_shared_ledgers">No hay libros compartidos</string>
+    <string name="default_tip">Configura una regla automática de ahorro del 5%% esta semana.</string>
+
+    <!-- Ledger dialog -->
+    <string name="ledger_name">Nombre del libro</string>
+    <string name="currency_label">Moneda</string>
+    <string name="description_optional">Descripción (opcional)</string>
+    <string name="save">Guardar</string>
+    <string name="delete">Eliminar</string>
+    <string name="delete_ledger_title">¿Eliminar libro?</string>
+    <string name="delete_ledger_message">Esta acción no se puede deshacer.</string>
+    <string name="create_ledger">Crear libro</string>
+    <string name="edit_ledger">Editar libro</string>
 
     <!-- Transactions -->
     <string name="filter_by_ledger">Filtrar por libro</string>
     <string name="filter_by_category">Filtrar por categoría</string>
+    <string name="filter_all">Todos</string>
     <string name="add_transaction">Añadir transacción</string>
     <string name="transactions">Transacciones</string>
     <string name="statistics">Estadísticas</string>
+    <string name="no_transactions_found">No se encontraron transacciones</string>
+    <string name="no_transactions_to_display">No hay transacciones para mostrar</string>
+    <string name="last_7_days">Últimos 7 días</string>
+    <string name="daily_income_expenses">Ingresos y gastos diarios</string>
+    <string name="top_spending_categories">Categorías con más gasto</string>
+    <string name="where_most_money_goes">Dónde se va el dinero</string>
+    <string name="today_label">Hoy</string>
+    <string name="yesterday_label">Ayer</string>
+    <string name="unknown_label">Desconocido</string>
+    <string name="category_other">Otros</string>
+    <string name="income_capital">INGRESO</string>
+    <string name="expense_capital">GASTO</string>
+    <string name="amount">Importe</string>
+    <string name="note_optional">Nota (opcional)</string>
+    <string name="select_ledger">Selecciona libro</string>
+    <string name="select_category">Selecciona categoría</string>
+    <string name="confirm">Confirmar</string>
+
+    <!-- AI -->
+    <string name="ai_title">Inteligencia Artificial</string>
+    <string name="ai_advice_label">CONSEJO</string>
+    <string name="ai_paywall_message">Desbloquea consejos de IA con Premium</string>
+    <string name="ai_paywall_cta">Hazte Premium</string>
+    <string name="advice_save_10pct">Intenta ahorrar al menos el 10%% de tus ingresos mensuales.</string>
+    <string name="advice_wait_24h">Evita compras impulsivas: espera 24 horas antes de comprar.</string>
+    <string name="advice_track_small">Registra cada gasto, incluso los pequeños — suman rápido.</string>
 
     <!-- Profile -->
     <string name="language_capital">IDIOMA</string>
@@ -56,6 +98,7 @@
     <string name="standard_member">ESTÁNDAR</string>
     <string name="edit_profile">Editar Perfil</string>
     <string name="logout">Cerrar Sesión</string>
+    <string name="logout_confirm_message">¿Seguro que quieres cerrar sesión?</string>
     <string name="back">Atrás</string>
 
     <!-- Share ledger dialog -->
