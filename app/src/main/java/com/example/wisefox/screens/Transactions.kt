@@ -318,7 +318,7 @@ private fun FilterDropdown(
         ) {
             values.forEach { value ->
                 DropdownMenuItem(
-                    text    = { Text(value) },
+                    text    = { Text(value, color = Color(0xFF1A1A1A)) },
                     onClick = {
                         onSelect(value)
                         expanded = false

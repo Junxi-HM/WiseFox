@@ -98,7 +98,7 @@ fun TransactionFormDialog(
                             ) {
                                 availableLedgers.forEach { ledger ->
                                     DropdownMenuItem(
-                                        text = { Text(ledger.name, color = TextPrimary) },
+                                        text = { Text(ledger.name, color = Color(0xFF1A1A1A)) },
                                         onClick = { selectedLedger = ledger; ledgerExpanded = false }
                                     )
                                 }
@@ -164,7 +164,7 @@ fun TransactionFormDialog(
                         ) {
                             TRANSACTION_CATEGORIES.forEach { cat ->
                                 DropdownMenuItem(
-                                    text = { Text(cat, color = TextPrimary) },
+                                    text = { Text(cat, color = Color(0xFF1A1A1A)) },
                                     onClick = { selectedCategory = cat; categoryExpanded = false }
                                 )
                             }
@@ -243,7 +243,7 @@ private fun dialogTextFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedBorderColor = WiseFoxOrangeDark.copy(alpha = 0.4f),
     focusedLabelColor    = WiseFoxOrange,
     unfocusedLabelColor  = TextPrimary.copy(alpha = 0.7f),
-    focusedTextColor     = TextPrimary,
-    unfocusedTextColor   = TextPrimary,
+    focusedTextColor     = Color(0xFF1A1A1A),
+    unfocusedTextColor   = Color(0xFF1A1A1A),
     cursorColor          = WiseFoxOrange
 )

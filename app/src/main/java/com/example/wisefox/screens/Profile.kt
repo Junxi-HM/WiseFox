@@ -566,14 +566,18 @@ private fun ShareLedgerDialog(
                     OutlinedTextField(
                         value         = email,
                         onValueChange = { email = it },
-                        label         = { Text(stringResource(R.string.recipient_email)) },
+                        label         = { Text(stringResource(R.string.recipient_email), color = WiseFoxOrangeDark) },
                         singleLine    = true,
                         shape         = RoundedCornerShape(14.dp),
                         modifier      = Modifier.fillMaxWidth(),
                         colors        = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor   = WiseFoxOrangeDark,
+                            unfocusedBorderColor = WiseFoxOrangeDark.copy(alpha = 0.4f),
                             focusedLabelColor    = WiseFoxOrangeDark,
-                            cursorColor          = WiseFoxOrangeDark
+                            unfocusedLabelColor  = WiseFoxOrangeDark.copy(alpha = 0.6f),
+                            cursorColor          = WiseFoxOrangeDark,
+                            focusedTextColor     = Color(0xFF1A1A1A),
+                            unfocusedTextColor   = Color(0xFF1A1A1A)
                         )
                     )
 
