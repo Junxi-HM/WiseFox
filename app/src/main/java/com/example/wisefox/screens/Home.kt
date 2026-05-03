@@ -41,6 +41,7 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.wisefox.utils.SessionManager
+import androidx.compose.runtime.DisposableEffect
 
 private val expensesColor = Color(0xFFE06030)
 private val earningsColor = Color(0xFF4A9E6A)
@@ -62,6 +63,17 @@ fun HomeScreen(
     val isLoading     by vm.isLoading.collectAsStateWithLifecycle()
     val crudState     by vm.crudState.collectAsStateWithLifecycle()
     val snackbarHost  = remember { SnackbarHostState() }
+// Refresh ledgers whenever the screen comes to the foreground
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                vm.loadLedgers()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val activeLedgers = if (isShared) sharedLedgers else soloLedgers
     val totalEarnings = activeLedgers.sumOf { it.totalIncome }

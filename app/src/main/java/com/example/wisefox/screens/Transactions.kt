@@ -42,6 +42,7 @@ import com.example.wisefox.viewmodels.TransactionsViewModel
 import com.example.wisefox.viewmodels.TxCrudState
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import androidx.compose.runtime.DisposableEffect
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,17 @@ fun TransactionsScreen(
     val isLoading    by vm.isLoading.collectAsStateWithLifecycle()
     val crudState    by vm.crudState.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                vm.loadAll()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // Close dialog on success / show error snackbar
     LaunchedEffect(crudState) {
