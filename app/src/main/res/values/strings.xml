@@ -1,21 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- English -->
+
+    <!-- App -->
     <string name="app_name">WiseFox</string>
+
+    <!-- Auth -->
     <string name="login_title">Welcome Back</string>
     <string name="login_subtitle">Log in to your account</string>
     <string name="hint_email">Email</string>
     <string name="hint_password">Password</string>
+    <string name="hint_name">First Name</string>
+    <string name="hint_surname">Last Name</string>
+    <string name="hint_username">Username</string>
+    <string name="hint_new_password">New Password (leave blank to keep current)</string>
     <string name="btn_login">Log in</string>
     <string name="btn_register">No account? Register now</string>
     <string name="forgot_password">Forgot password?</string>
+    <string name="btn_login_google">Google Login</string>
+
+    <!-- Navigation -->
     <string name="nav_home">Home</string>
     <string name="nav_transactions">Transactions</string>
     <string name="nav_ai">AI</string>
     <string name="nav_profile">Profile</string>
-    <string name="loading">Loading…</string>
-    <string name="error_generic">Something went wrong</string>
-    <string name="btn_login_google">Google Login</string>
+
+    <!-- Home -->
     <string name="earnings">Earnings</string>
     <string name="expenses">Expenses</string>
     <string name="welcome">Welcome,</string>
@@ -28,20 +37,93 @@
     <string name="shared_capital">SHARED</string>
     <string name="from_capital">FROM</string>
     <string name="to_capital">TO</string>
+    <string name="home_user_default">User</string>
+    <string name="no_ledgers_yet">No ledgers yet. Tap + to create one.</string>
+    <string name="no_shared_ledgers">No shared ledgers</string>
+    <string name="default_tip">Set up an automatic 5%% saving rule this week.</string>
+
+    <!-- Ledger dialog -->
+    <string name="ledger_name">Ledger name</string>
+    <string name="currency_label">Currency</string>
+    <string name="description_optional">Description (optional)</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="delete_ledger_title">Delete ledger?</string>
+    <string name="delete_ledger_message">This action cannot be undone.</string>
+    <string name="create_ledger">Create ledger</string>
+    <string name="edit_ledger">Edit ledger</string>
+
+    <!-- Transactions -->
     <string name="filter_by_ledger">Filter by Ledger</string>
     <string name="filter_by_category">Filter by Category</string>
+    <string name="filter_all">All</string>
     <string name="add_transaction">Add transaction</string>
     <string name="transactions">Transactions</string>
     <string name="statistics">Statistics</string>
+    <string name="no_transactions_found">No transactions found</string>
+    <string name="no_transactions_to_display">No transactions to display</string>
+    <string name="last_7_days">Last 7 Days</string>
+    <string name="daily_income_expenses">Daily income &amp; expenses</string>
+    <string name="top_spending_categories">Top Spending Categories</string>
+    <string name="where_most_money_goes">Where most money goes</string>
+    <string name="today_label">Today</string>
+    <string name="yesterday_label">Yesterday</string>
+    <string name="unknown_label">Unknown</string>
+    <string name="category_other">Other</string>
+    <string name="income_capital">INCOME</string>
+    <string name="expense_capital">EXPENSE</string>
+    <string name="amount">Amount</string>
+    <string name="note_optional">Note (optional)</string>
+    <string name="select_ledger">Select ledger</string>
+    <string name="select_category">Select category</string>
+    <string name="confirm">Confirm</string>
+
+    <!-- AI -->
+    <string name="ai_title">Artificial Intelligence</string>
+    <string name="ai_advice_label">ADVICE</string>
+    <string name="ai_paywall_message">Unlock AI insights with Premium</string>
+    <string name="ai_paywall_cta">Upgrade to Premium</string>
+    <string name="advice_save_10pct">Try to save at least 10%% of your monthly income.</string>
+    <string name="advice_wait_24h">Avoid impulse purchases by waiting 24 hours before buying.</string>
+    <string name="advice_track_small">Track every expense, even the small ones — they add up fast.</string>
+
+    <!-- Profile -->
     <string name="language_capital">LANGUAGE</string>
     <string name="notification_capital">NOTIFICATIONS</string>
     <string name="shared_ledgers_capital">SHARED LEDGERS</string>
     <string name="security_capital">SECURITY</string>
     <string name="account_preferences_capital">ACCOUNT PREFERENCES</string>
+    <string name="my_ledgers_capital">MY LEDGERS</string>
+    <string name="premium_member">PREMIUM MEMBER</string>
+    <string name="standard_member">STANDARD</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="logout">Log Out</string>
+    <string name="logout_confirm_message">Are you sure you want to log out of your account?</string>
+    <string name="back">Back</string>
 
-    <!-- Spanish -->
+    <!-- Share ledger dialog -->
+    <string name="share_ledger_title">Share Ledger</string>
+    <string name="share_ledger_subtitle">Invite someone to join \"%s\"</string>
+    <string name="recipient_email">Recipient Email</string>
+    <string name="share_sent_success">Invitation sent successfully! ✓</string>
+    <string name="share_premium_required">Sharing ledgers is a Premium feature. Upgrade your account to collaborate with others.</string>
+    <string name="upgrade_to_premium_hint">🦊 Upgrade to Premium to unlock ledger sharing!</string>
+    <string name="share_capital">SHARE</string>
+    <string name="send_capital">SEND</string>
+    <string name="close">Close</string>
+    <string name="cancel">Cancel</string>
+    <string name="retry">Retry</string>
 
+    <!-- Edit Profile -->
+    <string name="profile_photo">PROFILE PHOTO</string>
+    <string name="tap_to_change_photo">Tap to change photo</string>
+    <string name="personal_info_capital">PERSONAL INFO</string>
+    <string name="account_info_capital">ACCOUNT INFO</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="password_hint">Leave blank to keep your current password</string>
 
-    <!-- Chinese -->
+    <!-- Generic -->
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong</string>
 
 </resources>

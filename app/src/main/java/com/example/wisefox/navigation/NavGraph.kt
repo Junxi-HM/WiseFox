@@ -1,41 +1,33 @@
 package com.example.wisefox.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import com.example.wisefox.screens.LoginScreen
-import com.example.wisefox.screens.common.WiseFoxLayout
-
-// Placeholder composables – replace with real screen content
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import com.example.wisefox.screens.AIScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-import com.example.wisefox.screens.GoogleRegisterScreen
-import com.example.wisefox.screens.HomeScreen
-import com.example.wisefox.screens.ProfileScreen
-import com.example.wisefox.screens.TransactionsScreen
-import com.example.wisefox.ui.theme.TextWhite
-import com.example.wisefox.viewmodels.LoginUiState
-import com.example.wisefox.viewmodels.LoginViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.example.wisefox.screens.*
+import com.example.wisefox.screens.common.WiseFoxLayout
+import com.example.wisefox.viewmodels.HomeViewModel
+import com.example.wisefox.viewmodels.LoginUiState
+import com.example.wisefox.viewmodels.LoginViewModel
+import com.example.wisefox.viewmodels.ProfileViewModel
 
 @Composable
 fun WiseFoxNavGraph(navController: NavHostController) {
 
-    // 共享同一个 LoginViewModel，使 Login → GoogleRegister 两个屏幕能共享状态
     val loginViewModel: LoginViewModel = viewModel()
     val loginUiState by loginViewModel.uiState.collectAsStateWithLifecycle()
 
-    // 监听 NeedRegister 状态 → 跳转到注册页
+    val profileViewModel: ProfileViewModel = viewModel()
+
+    // 共享同一个 HomeViewModel，这样 ledger_detail 路由能从里面查账本
+    val homeViewModel: HomeViewModel = viewModel()
+
     LaunchedEffect(loginUiState) {
         if (loginUiState is LoginUiState.NeedRegister) {
             val state = loginUiState as LoginUiState.NeedRegister
@@ -50,20 +42,22 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         startDestination = Screen.Login.route
     ) {
 
-        // ── Login ─────────────────────────────────────────────────────────────
+// ── Login ─────────────────────────────────────────────────────────────
         composable(Screen.Login.route) {
             LoginScreen(
-                onLoginSuccess       = {
+                onLoginSuccess = {
+                    homeViewModel.loadLedgers()
+                    profileViewModel.loadProfile()
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = { /* TODO: 手动注册页 */ },
-                viewModel            = loginViewModel
+                onNavigateToRegister = { /* TODO */ },
+                viewModel = loginViewModel
             )
         }
 
-        // ── Google Register ───────────────────────────────────────────────────
+// ── Google Register ───────────────────────────────────────────────────
         composable(
             route = Screen.GoogleRegister.route,
             arguments = listOf(
@@ -74,10 +68,12 @@ fun WiseFoxNavGraph(navController: NavHostController) {
             val googleToken = backStackEntry.arguments?.getString("googleToken") ?: ""
             val email       = backStackEntry.arguments?.getString("email") ?: ""
             GoogleRegisterScreen(
-                googleToken     = googleToken,
-                email           = email,
-                viewModel       = loginViewModel,
+                googleToken  = googleToken,
+                email        = email,
+                viewModel    = loginViewModel,
                 onRegisterSuccess = {
+                    homeViewModel.loadLedgers()       // ← 新增
+                    profileViewModel.loadProfile()    // ← 新增
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
@@ -88,7 +84,7 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         // ── Home ──────────────────────────────────────────────────────────────
         composable(Screen.Home.route) {
             WiseFoxLayout(navController = navController) {
-                HomeScreen(navController)
+                HomeScreen(navController, vm = homeViewModel)
             }
         }
 
@@ -99,7 +95,7 @@ fun WiseFoxNavGraph(navController: NavHostController) {
             }
         }
 
-        // ── Ledger ────────────────────────────────────────────────────────────
+        // ── AI ────────────────────────────────────────────────────────────────
         composable(Screen.AI.route) {
             WiseFoxLayout(navController = navController) {
                 AIScreen(navController)
@@ -109,15 +105,39 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         // ── Profile ───────────────────────────────────────────────────────────
         composable(Screen.Profile.route) {
             WiseFoxLayout(navController = navController) {
-                ProfileScreen(navController)
+                ProfileScreen(
+                    navController = navController,
+                    viewModel     = profileViewModel
+                )
             }
         }
-    }
-}
 
-@Composable
-private fun PlaceholderScreen(name: String) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = name, color = TextWhite)
+        // ── Edit Profile ──────────────────────────────────────────────────────
+        composable(Screen.EditProfile.route) {
+            WiseFoxLayout(navController = navController) {
+                EditProfileScreen(
+                    navController = navController,
+                    viewModel     = profileViewModel
+                )
+            }
+        }
+
+        // ── Ledger Detail ─────────────────────────────────────────────────────
+        composable(
+            route     = Screen.LedgerDetail.route,          // "ledger_detail/{ledgerId}"
+            arguments = listOf(
+                navArgument("ledgerId") { type = NavType.LongType }
+            )
+        ) { backStackEntry ->
+            val ledgerId = backStackEntry.arguments?.getLong("ledgerId") ?: return@composable
+            val ledger   = homeViewModel.findLedgerById(ledgerId) ?: return@composable
+
+            WiseFoxLayout(navController = navController) {
+                LedgerDetailScreen(
+                    navController = navController,
+                    ledger        = ledger
+                )
+            }
+        }
     }
 }

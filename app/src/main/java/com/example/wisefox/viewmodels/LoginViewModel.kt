@@ -83,6 +83,21 @@ class LoginViewModel(
                 when (result["status"]) {
                     "OK" -> {
                         result["token"]?.let { SessionManager.saveToken(it) }
+
+                        val userId = result["userId"]?.toLongOrNull()
+                            ?: result["token"]?.let { parseUserIdFromJwt(it) }
+                            ?: -1L
+
+                        SessionManager.saveUser(
+                            id       = userId,
+                            username = result["username"] ?: "",
+                            email    = result["email"] ?: ""
+                        )
+                        SessionManager.saveUserExtended(
+                            name    = result["name"] ?: "",
+                            surname = result["surname"] ?: "",
+                            role    = result["role"] ?: "USER"
+                        )
                         _uiState.value = LoginUiState.Success
                     }
                     "VERIFY_REQUIRED" -> {
@@ -128,8 +143,27 @@ class LoginViewModel(
         viewModelScope.launch {
             try {
                 val result = repo.registerWithGoogle(googleToken, username, name, surname, password)
+
                 result["token"]?.let { SessionManager.saveToken(it) }
+
+                // ✅ 从 token JWT payload 解析 userId 作为 fallback
+                val userId = result["userId"]?.toLongOrNull()
+                    ?: result["token"]?.let { parseUserIdFromJwt(it) }
+                    ?: -1L
+
+                SessionManager.saveUser(
+                    id       = userId,
+                    username = result["username"] ?: username,
+                    email    = result["email"] ?: ""
+                )
+                SessionManager.saveUserExtended(
+                    name    = result["name"] ?: name,
+                    surname = result["surname"] ?: surname,
+                    role    = result["role"] ?: "USER"
+                )
+
                 _uiState.value = LoginUiState.Success
+
             } catch (e: Exception) {
                 _uiState.value = LoginUiState.ApiError(
                     e.message ?: "Registration failed. Please try again."
@@ -137,8 +171,21 @@ class LoginViewModel(
             }
         }
     }
-
     fun resetState() {
         _uiState.value = LoginUiState.Idle
+    }
+    private fun parseUserIdFromJwt(token: String): Long? {
+        return try {
+            // JWT 格式: header.payload.signature，payload 是 Base64
+            val payload = token.split(".")[1]
+            // 补齐 Base64 padding
+            val padded = payload + "=".repeat((4 - payload.length % 4) % 4)
+            val decoded = String(android.util.Base64.decode(padded, android.util.Base64.URL_SAFE))
+            // payload 是 JSON，取 "sub" 字段
+            val json = org.json.JSONObject(decoded)
+            json.getString("sub").toLongOrNull()
+        } catch (e: Exception) {
+            null
+        }
     }
 }
