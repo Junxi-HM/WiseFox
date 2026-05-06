@@ -20,11 +20,11 @@ sealed class LoginUiState {
     data class EmailError   (val message: String) : LoginUiState()
     data class PasswordError(val message: String) : LoginUiState()
     data class ApiError     (val message: String) : LoginUiState()
-    /** 手写登录时 email 不在 DB → 提示用 Google 注册 */
+    /** When logging in by hand, the email address is not in DB → prompts you to register with Google */
     object SuggestGoogle  : LoginUiState()
-    /** Google 新用户 → 需要输入验证码 */
+    /** New Google users → Require verification code */
     data class NeedVerifyCode(val email: String) : LoginUiState()
-    /** 验证码通过 → 需要完成注册 */
+    /** Verification code passed → Registration required */
     data class NeedRegister(val googleToken: String, val email: String) : LoginUiState()
 }
 
@@ -146,7 +146,7 @@ class LoginViewModel(
 
                 result["token"]?.let { SessionManager.saveToken(it) }
 
-                // ✅ 从 token JWT payload 解析 userId 作为 fallback
+                // Parse userId from token JWT payload as fallback
                 val userId = result["userId"]?.toLongOrNull()
                     ?: result["token"]?.let { parseUserIdFromJwt(it) }
                     ?: -1L
@@ -173,15 +173,18 @@ class LoginViewModel(
     }
     fun resetState() {
         _uiState.value = LoginUiState.Idle
+        email = ""
+        password = ""
     }
+
     private fun parseUserIdFromJwt(token: String): Long? {
         return try {
-            // JWT 格式: header.payload.signature，payload 是 Base64
+            // JWT format: header.payload.signature, payload is Base64
             val payload = token.split(".")[1]
-            // 补齐 Base64 padding
+            // Complete Base64 padding
             val padded = payload + "=".repeat((4 - payload.length % 4) % 4)
             val decoded = String(android.util.Base64.decode(padded, android.util.Base64.URL_SAFE))
-            // payload 是 JSON，取 "sub" 字段
+            // The payload is JSON; retrieve the "sub" field.
             val json = org.json.JSONObject(decoded)
             json.getString("sub").toLongOrNull()
         } catch (e: Exception) {

@@ -1,25 +1,42 @@
 package com.example.wisefox.utils
 
-import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import java.util.Locale
 
 /**
- * FIX #2: Applies a locale change at runtime so ALL stringResource() calls
- * pick up the new language immediately (not only when changing screen).
+ * Locale management for WiseFox.
  *
- * The trick is: changing Configuration alone is NOT enough — already-composed
- * Composables hold cached resolved strings. We must force-recreate the activity
- * so the whole composition tree re-runs against the new resources.
- *
- * Usage:
- *   LocaleHelper.applyAndRecreate(context, "ES")
+ * Strategy:
+ *   - We keep a single source of truth for the current language code
+ *     (`currentLanguage`) as a Compose-observable mutableStateOf.
+ *   - MainActivity wraps the whole NavGraph with a CompositionLocalProvider
+ *     that swaps LocalConfiguration / LocalContext whenever currentLanguage
+ *     changes. This makes every stringResource(...) inside the tree
+ *     re-resolve against the new locale on the SAME frame — no Activity
+ *     recreate(), no "have to tap twice" bug.
+ *   - We still call applyStoredLocale() in attachBaseContext so resources
+ *     loaded BEFORE Compose runs (e.g. system back button labels) match.
  *
  * Language codes accepted: "EN", "ES", "CN"
  */
 object LocaleHelper {
+
+    /**
+     * The currently active language code. Backed by a Compose state so that
+     * any composable that reads it will recompose on change.
+     */
+    var currentLanguage by mutableStateOf("EN")
+        private set
+
+    /** Call this once SessionManager is initialised (e.g. from Application.onCreate). */
+    fun initFromSession() {
+        currentLanguage = SessionManager.getLanguage()
+    }
 
     private fun localeFor(code: String): Locale = when (code.uppercase()) {
         "ES" -> Locale("es")
@@ -28,49 +45,46 @@ object LocaleHelper {
     }
 
     /**
-     * Update the resources configuration of the given context
-     * (typically the Activity context).
+     * Change the app language. Persists the choice and updates the Compose
+     * state — the UI will recompose with the new locale on the next frame.
+     * NO Activity.recreate() is performed.
      */
-    fun setLocale(context: Context, languageCode: String) {
-        val locale = localeFor(languageCode)
-        Locale.setDefault(locale)
-
-        val config = Configuration(context.resources.configuration)
-        config.setLocale(locale)
-
-        @Suppress("DEPRECATION")
-        context.resources.updateConfiguration(config, context.resources.displayMetrics)
+    fun changeLanguage(languageCode: String) {
+        val normalised = languageCode.uppercase()
+        if (normalised == currentLanguage) return
+        SessionManager.saveLanguage(normalised)
+        currentLanguage = normalised
+        // Update the JVM default so non-Compose code paths
+        // (e.g. backend Accept-Language headers) also see the new locale.
+        Locale.setDefault(localeFor(normalised))
     }
 
     /**
-     * FIX #2: Persist + apply + recreate Activity in one call.
-     * Call this from any screen when the user changes language. The Activity
-     * is recreated so every Composable re-resolves its stringResource() against
-     * the new locale — no more "some texts only change when I switch screen".
+     * Build a Context whose Configuration has the requested locale applied.
+     * Used by MainActivity's CompositionLocalProvider to feed Compose a
+     * Context that resolves resources in the chosen language.
      */
-    fun applyAndRecreate(activity: Activity, languageCode: String) {
-        SessionManager.saveLanguage(languageCode)
-        setLocale(activity, languageCode)
-        activity.recreate()
+    fun localizedContext(base: Context, languageCode: String): Context {
+        val locale = localeFor(languageCode)
+        val config = Configuration(base.resources.configuration)
+        config.setLocale(locale)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            base.createConfigurationContext(config)
+        } else {
+            @Suppress("DEPRECATION")
+            base.resources.updateConfiguration(config, base.resources.displayMetrics)
+            base
+        }
     }
 
     /**
      * Wrap context in Application/Activity attachBaseContext so the locale
-     * persists across activity recreations.
+     * persists across activity creations. Used at very early startup.
      */
     fun applyStoredLocale(context: Context): Context {
-        val locale = localeFor(SessionManager.getLanguage())
+        val code = SessionManager.getLanguage()
+        val locale = localeFor(code)
         Locale.setDefault(locale)
-
-        val config = Configuration(context.resources.configuration)
-        config.setLocale(locale)
-
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            context.createConfigurationContext(config)
-        } else {
-            @Suppress("DEPRECATION")
-            context.resources.updateConfiguration(config, context.resources.displayMetrics)
-            context
-        }
+        return localizedContext(context, code)
     }
 }

@@ -25,7 +25,6 @@ fun WiseFoxNavGraph(navController: NavHostController) {
 
     val profileViewModel: ProfileViewModel = viewModel()
 
-    // 共享同一个 HomeViewModel，这样 ledger_detail 路由能从里面查账本
     val homeViewModel: HomeViewModel = viewModel()
 
     LaunchedEffect(loginUiState) {
@@ -72,8 +71,8 @@ fun WiseFoxNavGraph(navController: NavHostController) {
                 email        = email,
                 viewModel    = loginViewModel,
                 onRegisterSuccess = {
-                    homeViewModel.loadLedgers()       // ← 新增
-                    profileViewModel.loadProfile()    // ← 新增
+                    homeViewModel.loadLedgers()
+                    profileViewModel.loadProfile()
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
@@ -106,8 +105,9 @@ fun WiseFoxNavGraph(navController: NavHostController) {
         composable(Screen.Profile.route) {
             WiseFoxLayout(navController = navController) {
                 ProfileScreen(
-                    navController = navController,
-                    viewModel     = profileViewModel
+                    navController  = navController,
+                    viewModel      = profileViewModel,
+                    loginViewModel = loginViewModel
                 )
             }
         }
