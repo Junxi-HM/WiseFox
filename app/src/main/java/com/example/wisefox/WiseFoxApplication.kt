@@ -7,7 +7,7 @@ import com.example.wisefox.utils.SessionManager
 
 class WiseFoxApplication : Application() {
 
-    // FIX #2: SessionManager must be initialised BEFORE attachBaseContext touches
+    // SessionManager must be initialised BEFORE attachBaseContext touches
     // SharedPreferences; we initialise here using a temporary context, then again
     // safely in onCreate() so prefs are usable for sure.
     override fun attachBaseContext(base: Context) {
@@ -18,5 +18,8 @@ class WiseFoxApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         SessionManager.init(this)
+        // Sync LocaleHelper's Compose state with the persisted preference,
+        // so the very first composition already uses the right language.
+        LocaleHelper.initFromSession()
     }
 }

@@ -1,6 +1,5 @@
 package com.example.wisefox.screens
 
-import android.app.Activity
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,6 +37,7 @@ import com.example.wisefox.navigation.Screen
 import com.example.wisefox.ui.theme.*
 import com.example.wisefox.utils.LocaleHelper
 import com.example.wisefox.utils.SessionManager
+import com.example.wisefox.viewmodels.LoginViewModel
 import com.example.wisefox.viewmodels.ProfileUiState
 import com.example.wisefox.viewmodels.ProfileViewModel
 import com.example.wisefox.viewmodels.ShareLedgerState
@@ -46,23 +47,51 @@ private val SectionCardBg  = Color(0xFFFFF3CC)
 private val RowItemBg      = Color(0xFFFFFAEE)
 private val DangerRed      = Color(0xFFE53935)
 
+/**
+ * Wraps `content` so that any composable inside (notably Dialog/AlertDialog
+ * sub-windows) sees the currently selected locale. Compose Dialogs create
+ * their own Window with its own Context that does NOT inherit the
+ * CompositionLocalProvider set up in MainActivity, so `stringResource(...)`
+ * inside a Dialog falls back to the Activity's original Configuration locale.
+ *
+ * Use this around any Dialog body to guarantee its strings are translated.
+ */
+@Composable
+private fun LocalizedDialogContent(content: @Composable () -> Unit) {
+    val language = LocaleHelper.currentLanguage
+    val baseContext = LocalContext.current
+    val localisedContext = remember(language, baseContext) {
+        LocaleHelper.localizedContext(baseContext, language)
+    }
+    val localisedConfiguration = remember(language, localisedContext) {
+        localisedContext.resources.configuration
+    }
+    CompositionLocalProvider(
+        LocalContext provides localisedContext,
+        LocalConfiguration provides localisedConfiguration
+    ) {
+        content()
+    }
+}
+
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel(),
+    loginViewModel: LoginViewModel = viewModel()
 ) {
     val uiState         by viewModel.uiState.collectAsStateWithLifecycle()
     val shareState      by viewModel.shareLedgerState.collectAsStateWithLifecycle()
-    val context         = LocalContext.current
 
-    // Language state – read from SessionManager so it survives recompositions
-    var selectedLanguage by remember { mutableStateOf(SessionManager.getLanguage()) }
+    // Read directly from the global LocaleHelper. It's a Compose mutableState
+    // so we recompose automatically when the user picks a different language.
+    val selectedLanguage = LocaleHelper.currentLanguage
 
     // Share ledger dialog state
     var showShareDialog  by remember { mutableStateOf(false) }
     var selectedLedger   by remember { mutableStateOf<LedgerResponse?>(null) }
 
-    // FIX #1: logout confirmation dialog
+    // Logout confirmation dialog
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     // ── Share dialog ────────────────────────────────────────────────────────────
@@ -83,43 +112,57 @@ fun ProfileScreen(
         )
     }
 
-    // ── Logout confirmation dialog (FIX #1) ─────────────────────────────────────
+    // ── Logout confirmation dialog ─────────────────────────────────────────────
     if (showLogoutDialog) {
+        // AlertDialog also creates its own sub-window; wrap its slots so they
+        // resolve stringResource(...) against the current locale.
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             title = {
-                Text(
-                    text = stringResource(R.string.logout),
-                    color = WiseFoxOrangeDark,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    text = stringResource(R.string.logout_confirm_message),
-                    color = TextSecondary
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showLogoutDialog = false
-                    // Clear session and navigate to login, removing back-stack
-                    SessionManager.clear()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }) {
+                LocalizedDialogContent {
                     Text(
                         text = stringResource(R.string.logout),
-                        color = DangerRed,
+                        color = WiseFoxOrangeDark,
                         fontWeight = FontWeight.Bold
                     )
                 }
             },
+            text = {
+                LocalizedDialogContent {
+                    Text(
+                        text = stringResource(R.string.logout_confirm_message),
+                        color = TextSecondary
+                    )
+                }
+            },
+            confirmButton = {
+                LocalizedDialogContent {
+                    TextButton(onClick = {
+                        showLogoutDialog = false
+                        // 1) Clear persisted session (token + user info)
+                        SessionManager.clear()
+                        // 2) Reset LoginViewModel so LoginScreen doesn't see a stale
+                        //    Success state and bounce the user straight back to Home.
+                        loginViewModel.resetState()
+                        // 3) Navigate to login, removing the entire back-stack
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }) {
+                        Text(
+                            text = stringResource(R.string.logout),
+                            color = DangerRed,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text(stringResource(R.string.cancel), color = TextSecondary)
+                LocalizedDialogContent {
+                    TextButton(onClick = { showLogoutDialog = false }) {
+                        Text(stringResource(R.string.cancel), color = TextSecondary)
+                    }
                 }
             },
             containerColor = WiseFoxSubCardBg
@@ -178,16 +221,10 @@ fun ProfileScreen(
                     selectedLanguage = selectedLanguage,
                     navController    = navController,
                     onLanguageChange = { lang ->
-                        // FIX #2: persist + apply + recreate the activity so EVERY
-                        // string on every screen refreshes immediately.
-                        selectedLanguage = lang
-                        val activity = context as? Activity
-                        if (activity != null) {
-                            LocaleHelper.applyAndRecreate(activity, lang)
-                        } else {
-                            SessionManager.saveLanguage(lang)
-                            LocaleHelper.setLocale(context, lang)
-                        }
+                        // Single source of truth: just update LocaleHelper.
+                        // Compose will recompose every stringResource on the
+                        // next frame against the new locale — no recreate.
+                        LocaleHelper.changeLanguage(lang)
                     },
                     onShareLedger    = { ledger ->
                         selectedLedger  = ledger
@@ -434,7 +471,6 @@ private fun ProfileContent(
     }
 
     // ── Logout button ─────────────────────────────────────────────────────────
-    // FIX #1: now actually triggers logout flow.
     OutlinedButton(
         onClick  = onLogout,
         shape    = RoundedCornerShape(14.dp),
@@ -502,156 +538,164 @@ private fun ShareLedgerDialog(
     var email by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape  = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        // The Dialog hosts its own Window; LocalContext / LocalConfiguration
+        // inside it do NOT inherit the locale-overridden values from
+        // MainActivity. Wrap the Dialog body so its stringResource(...) calls
+        // resolve against the current language.
+        LocalizedDialogContent {
+            Card(
+                shape  = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text       = stringResource(R.string.share_ledger_title),
-                    fontSize   = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color      = WiseFoxOrangeDark
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (!isPremium) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        text      = stringResource(R.string.share_premium_required),
-                        fontSize  = 14.sp,
-                        color     = TextSecondary,
-                        textAlign = TextAlign.Center,
-                        modifier  = Modifier.padding(horizontal = 8.dp)
+                        text       = stringResource(R.string.share_ledger_title),
+                        fontSize   = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color      = WiseFoxOrangeDark
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFFFEEEE))
-                            .padding(12.dp)
-                    ) {
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (!isPremium) {
                         Text(
-                            text      = stringResource(R.string.upgrade_to_premium_hint),
-                            fontSize  = 13.sp,
-                            color     = DangerRed,
+                            text      = stringResource(R.string.share_premium_required),
+                            fontSize  = 14.sp,
+                            color     = TextSecondary,
                             textAlign = TextAlign.Center,
-                            modifier  = Modifier.fillMaxWidth()
+                            modifier  = Modifier.padding(horizontal = 8.dp)
                         )
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Button(
-                        onClick  = onDismiss,
-                        shape    = RoundedCornerShape(14.dp),
-                        colors   = ButtonDefaults.buttonColors(containerColor = WiseFoxOrangeDark),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.close), color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                } else {
-                    Text(
-                        text      = stringResource(R.string.share_ledger_subtitle, ledger.name),
-                        fontSize  = 13.sp,
-                        color     = TextSecondary,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    OutlinedTextField(
-                        value         = email,
-                        onValueChange = { email = it },
-                        label         = { Text(stringResource(R.string.recipient_email), color = WiseFoxOrangeDark) },
-                        singleLine    = true,
-                        shape         = RoundedCornerShape(14.dp),
-                        modifier      = Modifier.fillMaxWidth(),
-                        colors        = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor   = WiseFoxOrangeDark,
-                            unfocusedBorderColor = WiseFoxOrangeDark.copy(alpha = 0.4f),
-                            focusedLabelColor    = WiseFoxOrangeDark,
-                            unfocusedLabelColor  = WiseFoxOrangeDark.copy(alpha = 0.6f),
-                            cursorColor          = WiseFoxOrangeDark,
-                            focusedTextColor     = Color(0xFF1A1A1A),
-                            unfocusedTextColor   = Color(0xFF1A1A1A)
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    when (shareState) {
-                        is ShareLedgerState.Sending -> {
-                            CircularProgressIndicator(
-                                color    = WiseFoxOrangeDark,
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-                        is ShareLedgerState.Sent -> {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFFFEEEE))
+                                .padding(12.dp)
+                        ) {
                             Text(
-                                text      = stringResource(R.string.share_sent_success),
-                                color     = Color(0xFF4A9E6A),
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                modifier  = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Button(
-                                onClick  = onDismiss,
-                                shape    = RoundedCornerShape(14.dp),
-                                colors   = ButtonDefaults.buttonColors(containerColor = WiseFoxOrangeDark),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.close), color = Color.White, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        is ShareLedgerState.Error -> {
-                            Text(
-                                text      = shareState.message,
-                                color     = DangerRed,
+                                text      = stringResource(R.string.upgrade_to_premium_hint),
                                 fontSize  = 13.sp,
+                                color     = DangerRed,
                                 textAlign = TextAlign.Center,
                                 modifier  = Modifier.fillMaxWidth()
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(
-                                modifier            = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick  = onDismiss,
-                                    shape    = RoundedCornerShape(14.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) { Text(stringResource(R.string.cancel)) }
-                                Button(
-                                    onClick  = { onSend(email.trim()) },
-                                    shape    = RoundedCornerShape(14.dp),
-                                    colors   = ButtonDefaults.buttonColors(containerColor = WiseFoxOrangeDark),
-                                    modifier = Modifier.weight(1f)
-                                ) { Text(stringResource(R.string.retry), color = Color.White) }
-                            }
                         }
-                        else -> {
-                            Row(
-                                modifier            = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedButton(
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Button(
+                            onClick  = onDismiss,
+                            shape    = RoundedCornerShape(14.dp),
+                            colors   = ButtonDefaults.buttonColors(containerColor = WiseFoxOrangeDark),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.close), color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        Text(
+                            text      = stringResource(R.string.share_ledger_subtitle, ledger.name),
+                            fontSize  = 13.sp,
+                            color     = TextSecondary,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        OutlinedTextField(
+                            value         = email,
+                            onValueChange = { email = it },
+                            label         = { Text(stringResource(R.string.recipient_email), color = WiseFoxOrangeDark) },
+                            singleLine    = true,
+                            shape         = RoundedCornerShape(14.dp),
+                            modifier      = Modifier.fillMaxWidth(),
+                            colors        = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor   = WiseFoxOrangeDark,
+                                unfocusedBorderColor = WiseFoxOrangeDark.copy(alpha = 0.4f),
+                                focusedLabelColor    = WiseFoxOrangeDark,
+                                unfocusedLabelColor  = WiseFoxOrangeDark.copy(alpha = 0.6f),
+                                cursorColor          = WiseFoxOrangeDark,
+                                focusedTextColor     = Color(0xFF1A1A1A),
+                                unfocusedTextColor   = Color(0xFF1A1A1A)
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        when (shareState) {
+                            is ShareLedgerState.Sending -> {
+                                CircularProgressIndicator(
+                                    color    = WiseFoxOrangeDark,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                            is ShareLedgerState.Sent -> {
+                                Text(
+                                    text      = stringResource(R.string.share_sent_success),
+                                    color     = Color(0xFF4A9E6A),
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    modifier  = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Button(
                                     onClick  = onDismiss,
                                     shape    = RoundedCornerShape(14.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) { Text(stringResource(R.string.cancel)) }
-                                Button(
-                                    onClick  = { if (email.isNotBlank()) onSend(email.trim()) },
-                                    shape    = RoundedCornerShape(14.dp),
                                     colors   = ButtonDefaults.buttonColors(containerColor = WiseFoxOrangeDark),
-                                    modifier = Modifier.weight(1f),
-                                    enabled  = email.isNotBlank()
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(stringResource(R.string.send_capital), color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.close), color = Color.White, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            is ShareLedgerState.Error -> {
+                                Text(
+                                    text      = shareState.message,
+                                    color     = DangerRed,
+                                    fontSize  = 13.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier  = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Row(
+                                    modifier            = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick  = onDismiss,
+                                        shape    = RoundedCornerShape(14.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(stringResource(R.string.cancel)) }
+                                    Button(
+                                        onClick  = { onSend(email.trim()) },
+                                        shape    = RoundedCornerShape(14.dp),
+                                        colors   = ButtonDefaults.buttonColors(containerColor = WiseFoxOrangeDark),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(stringResource(R.string.retry), color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            else -> {
+                                Row(
+                                    modifier            = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick  = onDismiss,
+                                        shape    = RoundedCornerShape(14.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(stringResource(R.string.cancel)) }
+                                    Button(
+                                        onClick  = { if (email.isNotBlank()) onSend(email.trim()) },
+                                        shape    = RoundedCornerShape(14.dp),
+                                        colors   = ButtonDefaults.buttonColors(containerColor = WiseFoxOrangeDark),
+                                        modifier = Modifier.weight(1f),
+                                        enabled  = email.isNotBlank()
+                                    ) {
+                                        Text(stringResource(R.string.send_capital), color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
