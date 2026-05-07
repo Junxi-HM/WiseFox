@@ -126,4 +126,7 @@
     <string name="loading">加载中…</string>
     <string name="error_generic">出了点问题</string>
 
+    <!-- Language change confirmation dialog -->
+    <string name="language_change_title">切换语言？</string>
+    <string name="language_change_message">将应用语言切换为 %s 吗？</string>
 </resources>
