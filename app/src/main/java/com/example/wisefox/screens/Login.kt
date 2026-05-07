@@ -166,7 +166,7 @@ fun LoginScreen(
         ForgotEmailDialog(
             isLoading    = isResetLoading,
             errorMessage = resetDialogError,
-            onSend       = { email ->
+            onSend       = { email: String ->
                 resetDialogError = null
                 forgotEmail      = email
                 viewModel.sendResetCode(email)
