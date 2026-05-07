@@ -68,4 +68,29 @@ class AuthRepository {
             }
         )
     }
+
+    suspend fun forgotPassword(email: String): String {
+        val response = api.forgotPassword(mapOf("email" to email))
+        if (response.isSuccessful) return response.body()?.get("message") ?: ""
+        val code = response.code()
+        throw Exception(when (code) {
+            404  -> "EMAIL_NOT_FOUND"
+            else -> "Request failed ($code)"
+        })
+    }
+
+    suspend fun verifyResetCode(email: String, code: String): String {
+        val response = api.verifyResetCode(VerifyCodeBody(email, code))
+        if (response.isSuccessful) return response.body()?.get("resetToken") ?: ""
+        throw Exception(when (response.code()) {
+            400  -> "INVALID_CODE"
+            else -> "Verification failed (${response.code()})"
+        })
+    }
+
+    suspend fun resetPassword(resetToken: String, newPassword: String): String {
+        val response = api.resetPassword(mapOf("resetToken" to resetToken, "newPassword" to newPassword))
+        if (response.isSuccessful) return response.body()?.get("message") ?: ""
+        throw Exception("Reset failed (${response.code()})")
+    }
 }

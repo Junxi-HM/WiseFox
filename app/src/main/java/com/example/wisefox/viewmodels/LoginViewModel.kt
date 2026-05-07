@@ -26,6 +26,11 @@ sealed class LoginUiState {
     data class NeedVerifyCode(val email: String) : LoginUiState()
     /** Verification code passed → Registration required */
     data class NeedRegister(val googleToken: String, val email: String) : LoginUiState()
+
+    object ForgotPasswordEmailSent : LoginUiState()
+    data class ResetCodeVerified(val resetToken: String) : LoginUiState()
+    object PasswordResetSuccess : LoginUiState()
+    data class ForgotPasswordError(val message: String) : LoginUiState()
 }
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -189,6 +194,46 @@ class LoginViewModel(
             json.getString("sub").toLongOrNull()
         } catch (e: Exception) {
             null
+        }
+    }
+
+    fun sendResetCode(email: String) {
+        viewModelScope.launch {
+            _uiState.value = LoginUiState.Loading
+            try {
+                repo.forgotPassword(email)
+                _uiState.value = LoginUiState.ForgotPasswordEmailSent
+            } catch (e: Exception) {
+                val msg = when {
+                    e.message?.contains("EMAIL_NOT_FOUND") == true -> "No account with that email."
+                    else -> "Something went wrong. Try again."
+                }
+                _uiState.value = LoginUiState.ForgotPasswordError(msg)
+            }
+        }
+    }
+
+    fun verifyResetCode(email: String, code: String) {
+        viewModelScope.launch {
+            _uiState.value = LoginUiState.Loading
+            try {
+                val resetToken = repo.verifyResetCode(email, code)
+                _uiState.value = LoginUiState.ResetCodeVerified(resetToken)
+            } catch (e: Exception) {
+                _uiState.value = LoginUiState.ForgotPasswordError("Incorrect or expired code.")
+            }
+        }
+    }
+
+    fun resetPassword(resetToken: String, newPassword: String) {
+        viewModelScope.launch {
+            _uiState.value = LoginUiState.Loading
+            try {
+                repo.resetPassword(resetToken, newPassword)
+                _uiState.value = LoginUiState.PasswordResetSuccess
+            } catch (e: Exception) {
+                _uiState.value = LoginUiState.ForgotPasswordError("Failed to reset password.")
+            }
         }
     }
 }
