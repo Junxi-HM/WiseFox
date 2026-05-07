@@ -58,6 +58,17 @@ fun LoginScreen(
     // ── Credential Manager ────────────────────────────────────────────────────
     val credentialManager = remember { CredentialManager.create(context) }
 
+    // ── Password reset ────────────────────────────────────────────────────
+    var showForgotEmailDialog by remember { mutableStateOf(false) }
+    var showResetCodeDialog   by remember { mutableStateOf(false) }
+    var showNewPasswordDialog by remember { mutableStateOf(false) }
+    var forgotEmail           by remember { mutableStateOf("") }
+    var resetToken            by remember { mutableStateOf("") }
+    var resetDialogError      by remember { mutableStateOf<String?>(null) }
+
+    val isResetLoading = uiState is LoginUiState.Loading &&
+            (showForgotEmailDialog || showResetCodeDialog || showNewPasswordDialog)
+
     // !! 替换为你在 Google Cloud Console 的 Web Client ID !!
     val googleRequest = remember {
         val googleIdOption = GetGoogleIdOption.Builder()
@@ -107,11 +118,85 @@ fun LoginScreen(
             }
         }
         VerifyCodeDialog(
-            email        = needVerifyState.email,
-            isLoading    = false,
+            email = needVerifyState.email,
+            isLoading = false,
             errorMessage = verifyError.value,
-            onConfirm    = { code -> viewModel.verifyCode(needVerifyState.email, code) },
-            onDismiss    = { viewModel.resetState() }
+            onConfirm = { code -> viewModel.verifyCode(needVerifyState.email, code) },
+            onDismiss = { viewModel.resetState() }
+        )
+    }
+
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is LoginUiState.ForgotPasswordEmailSent -> {
+                resetDialogError      = null
+                showForgotEmailDialog = false
+                showResetCodeDialog   = true
+            }
+            is LoginUiState.ResetCodeVerified -> {
+                resetDialogError      = null
+                resetToken            = (uiState as LoginUiState.ResetCodeVerified).resetToken
+                showResetCodeDialog   = false
+                showNewPasswordDialog = true
+            }
+            is LoginUiState.PasswordResetSuccess -> {
+                showNewPasswordDialog = false
+                resetDialogError      = null
+                viewModel.resetState()
+                // TODO: mostrar Snackbar "Password updated!"
+            }
+            is LoginUiState.ForgotPasswordError -> {
+                resetDialogError = (uiState as LoginUiState.ForgotPasswordError).message
+            }
+            else -> {}
+        }
+    }
+
+    fun closeAllResetDialogs() {
+        showForgotEmailDialog = false
+        showResetCodeDialog   = false
+        showNewPasswordDialog = false
+        resetDialogError      = null
+        forgotEmail           = ""
+        resetToken            = ""
+        viewModel.resetState()
+    }
+
+    if (showForgotEmailDialog) {
+        ForgotEmailDialog(
+            isLoading    = isResetLoading,
+            errorMessage = resetDialogError,
+            onSend       = { email ->
+                resetDialogError = null
+                forgotEmail      = email
+                viewModel.sendResetCode(email)
+            },
+            onDismiss = { closeAllResetDialogs() }
+        )
+    }
+
+    if (showResetCodeDialog) {
+        ResetCodeDialog(
+            email        = forgotEmail,
+            isLoading    = isResetLoading,
+            errorMessage = resetDialogError,
+            onVerify     = { code ->
+                resetDialogError = null
+                viewModel.verifyResetCode(forgotEmail, code)
+            },
+            onDismiss = { closeAllResetDialogs() }
+        )
+    }
+
+    if (showNewPasswordDialog) {
+        NewPasswordDialog(
+            isLoading    = isResetLoading,
+            errorMessage = resetDialogError,
+            onReset      = { pass ->
+                resetDialogError = null
+                viewModel.resetPassword(resetToken, pass)
+            },
+            onDismiss = { closeAllResetDialogs() }
         )
     }
 
@@ -144,9 +229,9 @@ fun LoginScreen(
                         elevation = 20.dp,
                         shape = RoundedCornerShape(32.dp),
                         ambientColor = WiseFoxOrangeDark.copy(alpha = 0.35f),
-                        spotColor    = WiseFoxOrangeDark.copy(alpha = 0.35f)
+                        spotColor = WiseFoxOrangeDark.copy(alpha = 0.35f)
                     ),
-                shape  = RoundedCornerShape(32.dp),
+                shape = RoundedCornerShape(32.dp),
                 colors = CardDefaults.cardColors(containerColor = WiseFoxLoginCardBg)
             ) {
                 Column(
@@ -180,7 +265,7 @@ fun LoginScreen(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
-                            imeAction    = ImeAction.Next
+                            imeAction = ImeAction.Next
                         ),
                         keyboardActions = KeyboardActions(
                             onNext = { focusManager.moveFocus(FocusDirection.Down) }
@@ -219,7 +304,7 @@ fun LoginScreen(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
-                            imeAction    = ImeAction.Done
+                            imeAction = ImeAction.Done
                         ),
                         keyboardActions = KeyboardActions(onDone = {
                             focusManager.clearFocus()
@@ -255,7 +340,7 @@ fun LoginScreen(
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White,
-                                contentColor   = Color(0xFF1f1f1f)
+                                contentColor = Color(0xFF1f1f1f)
                             ),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
                             border = BorderStroke(1.dp, Color(0xFF747775))
@@ -279,10 +364,14 @@ fun LoginScreen(
                         }
 
                         Text(
-                            text = stringResource(R.string.forgot_password),
-                            fontSize = 17.sp,
-                            color = TextWhite.copy(alpha = 0.9f),
-                            modifier = Modifier.clickable { /* TODO */ }
+                            text     = stringResource(R.string.forgot_password),
+                            fontSize = 13.sp,
+                            color    = TextWhite.copy(alpha = 0.85f),
+                            modifier = Modifier.clickable {
+                                viewModel.resetState()
+                                resetDialogError      = null
+                                showForgotEmailDialog = true
+                            }
                         )
                     }
 
@@ -293,10 +382,10 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(60.dp),
-                        shape  = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(24.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = WiseFoxOrangeDark,
-                            contentColor   = TextWhite
+                            contentColor = TextWhite
                         )
                     ) {
                         if (uiState is LoginUiState.Loading) {
@@ -338,11 +427,12 @@ fun LoginScreen(
                                 textAlign = TextAlign.Center
                             )
                         }
+
                         is LoginUiState.SuggestGoogle -> {
                             Spacer(modifier = Modifier.height(12.dp))
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape  = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color.White.copy(alpha = 0.18f)
                                 )
@@ -356,6 +446,7 @@ fun LoginScreen(
                                 )
                             }
                         }
+
                         else -> {}
                     }
                 }

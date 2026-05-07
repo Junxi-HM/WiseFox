@@ -26,4 +26,16 @@ interface AuthApiService {
     // ── Google Step 3: 提交注册信息 ────────────────────────────────────────
     @POST("api/auth/register/google")
     suspend fun registerWithGoogle(@Body request: GoogleRegisterBody): Response<Map<String, String>>
+
+    // ── Password Reset Step 1 ──────────────────────────────────────────────
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(@Body body: Map<String, String>): Response<Map<String, String>>
+
+    // ── Password Reset Step 2 ──────────────────────────────────────────────
+    @POST("api/auth/verify-reset-code")
+    suspend fun verifyResetCode(@Body body: VerifyCodeBody): Response<Map<String, String>>
+
+    // ── Password Reset Step 3 ──────────────────────────────────────────────
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(@Body body: Map<String, String>): Response<Map<String, String>>
 }
