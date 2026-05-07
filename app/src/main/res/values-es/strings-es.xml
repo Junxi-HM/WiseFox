@@ -126,4 +126,7 @@
     <string name="loading">Cargando…</string>
     <string name="error_generic">Algo salió mal</string>
 
+    <!-- Language change confirmation dialog -->
+    <string name="language_change_title">¿Cambiar idioma?</string>
+    <string name="language_change_message">¿Cambiar el idioma de la app a %s?</string>
 </resources>

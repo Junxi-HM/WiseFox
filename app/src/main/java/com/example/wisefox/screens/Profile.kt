@@ -55,13 +55,18 @@ private val DangerRed      = Color(0xFFE53935)
  * inside a Dialog falls back to the Activity's original Configuration locale.
  *
  * Use this around any Dialog body to guarantee its strings are translated.
+ *
+ * Uses `localizedActivityContext` rather than a plain
+ * `createConfigurationContext` so APIs that walk up the Context chain
+ * (e.g. `rememberLauncherForActivityResult`) still find the underlying
+ * Activity even inside the wrapped subtree.
  */
 @Composable
 private fun LocalizedDialogContent(content: @Composable () -> Unit) {
     val language = LocaleHelper.currentLanguage
     val baseContext = LocalContext.current
     val localisedContext = remember(language, baseContext) {
-        LocaleHelper.localizedContext(baseContext, language)
+        LocaleHelper.localizedActivityContext(baseContext, language)
     }
     val localisedConfiguration = remember(language, localisedContext) {
         localisedContext.resources.configuration
@@ -72,6 +77,14 @@ private fun LocalizedDialogContent(content: @Composable () -> Unit) {
     ) {
         content()
     }
+}
+
+/** Human-readable name for a language code, shown in the confirmation dialog. */
+private fun languageDisplayName(code: String): String = when (code.uppercase()) {
+    "EN" -> "English"
+    "ES" -> "Español"
+    "CN" -> "中文"
+    else -> code
 }
 
 @Composable
@@ -93,6 +106,10 @@ fun ProfileScreen(
 
     // Logout confirmation dialog
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // Language change confirmation: holds the language code the user just
+    // tapped, awaiting confirmation. Null means no dialog is showing.
+    var pendingLanguage by remember { mutableStateOf<String?>(null) }
 
     // ── Share dialog ────────────────────────────────────────────────────────────
     if (showShareDialog && selectedLedger != null) {
@@ -139,12 +156,8 @@ fun ProfileScreen(
                 LocalizedDialogContent {
                     TextButton(onClick = {
                         showLogoutDialog = false
-                        // 1) Clear persisted session (token + user info)
                         SessionManager.clear()
-                        // 2) Reset LoginViewModel so LoginScreen doesn't see a stale
-                        //    Success state and bounce the user straight back to Home.
                         loginViewModel.resetState()
-                        // 3) Navigate to login, removing the entire back-stack
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                             launchSingleTop = true
@@ -161,6 +174,58 @@ fun ProfileScreen(
             dismissButton = {
                 LocalizedDialogContent {
                     TextButton(onClick = { showLogoutDialog = false }) {
+                        Text(stringResource(R.string.cancel), color = TextSecondary)
+                    }
+                }
+            },
+            containerColor = WiseFoxSubCardBg
+        )
+    }
+
+    // ── Language change confirmation dialog ────────────────────────────────────
+    pendingLanguage?.let { newLanguage ->
+        AlertDialog(
+            onDismissRequest = { pendingLanguage = null },
+            title = {
+                LocalizedDialogContent {
+                    Text(
+                        text       = stringResource(R.string.language_change_title),
+                        color      = WiseFoxOrangeDark,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            text = {
+                LocalizedDialogContent {
+                    Text(
+                        text  = stringResource(
+                            R.string.language_change_message,
+                            languageDisplayName(newLanguage)
+                        ),
+                        color = TextSecondary
+                    )
+                }
+            },
+            confirmButton = {
+                LocalizedDialogContent {
+                    TextButton(onClick = {
+                        pendingLanguage = null
+                        // Single source of truth: just update LocaleHelper.
+                        // Compose will recompose every stringResource on the
+                        // next frame against the new locale — no recreate.
+                        LocaleHelper.changeLanguage(newLanguage)
+                    }) {
+                        Text(
+                            text       = stringResource(R.string.confirm),
+                            color      = WiseFoxOrangeDark,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            dismissButton = {
+                LocalizedDialogContent {
+                    TextButton(onClick = { pendingLanguage = null }) {
                         Text(stringResource(R.string.cancel), color = TextSecondary)
                     }
                 }
@@ -221,10 +286,12 @@ fun ProfileScreen(
                     selectedLanguage = selectedLanguage,
                     navController    = navController,
                     onLanguageChange = { lang ->
-                        // Single source of truth: just update LocaleHelper.
-                        // Compose will recompose every stringResource on the
-                        // next frame against the new locale — no recreate.
-                        LocaleHelper.changeLanguage(lang)
+                        // Tapping a language no longer applies it directly —
+                        // ask the user to confirm first. If the tap is on the
+                        // already-active language, do nothing.
+                        if (lang.uppercase() != selectedLanguage.uppercase()) {
+                            pendingLanguage = lang
+                        }
                     },
                     onShareLedger    = { ledger ->
                         selectedLedger  = ledger
