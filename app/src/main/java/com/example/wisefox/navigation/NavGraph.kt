@@ -122,6 +122,10 @@ fun WiseFoxNavGraph(navController: NavHostController) {
             }
         }
 
+        composable(Screen.SharedLedgers.route) {
+            SharedLedgersScreen(navController = navController)
+        }
+
         // ── Ledger Detail ─────────────────────────────────────────────────────
         composable(
             route     = Screen.LedgerDetail.route,          // "ledger_detail/{ledgerId}"

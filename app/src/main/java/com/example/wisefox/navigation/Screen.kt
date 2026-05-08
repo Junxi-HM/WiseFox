@@ -9,8 +9,8 @@ sealed class Screen(val route: String) {
     object Transactions : Screen("transactions")
     object AI           : Screen("ai")
     object Profile      : Screen("profile")
-
     object EditProfile  : Screen("edit_profile")
+    object SharedLedgers : Screen("shared_ledgers")
 
     object LedgerDetail : Screen("ledger_detail/{ledgerId}") {
         fun createRoute(ledgerId: Long) = "ledger_detail/$ledgerId"
