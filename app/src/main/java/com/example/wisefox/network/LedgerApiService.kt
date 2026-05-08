@@ -1,6 +1,7 @@
 package com.example.wisefox.network
 
 import com.example.wisefox.model.LedgerResponse
+import com.example.wisefox.model.LedgerSharedRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -25,6 +26,9 @@ interface LedgerApiService {
     suspend fun createLedger(
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): Response<LedgerResponse>
+
+    @POST("api/ledgers/create-shared")
+    suspend fun createSharedLedger(@Body body: Map<String, @JvmSuppressWildcards Any>): Response<LedgerResponse>
 
     @PUT("api/ledgers/{id}")
     suspend fun updateLedger(

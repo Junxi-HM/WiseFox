@@ -14,5 +14,6 @@ data class LedgerResponse(
     val currency: String,
     val description: String?,
     val ownerId: Long?,
-    val ownerUsername: String?
+    val ownerUsername: String?,
+    val memberCount: Int = 0
 )
