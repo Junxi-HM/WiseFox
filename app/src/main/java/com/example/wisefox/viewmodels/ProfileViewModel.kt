@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wisefox.model.LedgerResponse
+import com.example.wisefox.model.UserLedgerResponse
 import com.example.wisefox.model.UserResponse
 import com.example.wisefox.repository.UserRepository
 import com.example.wisefox.utils.SessionManager
@@ -46,6 +47,9 @@ class ProfileViewModel : ViewModel() {
 
     private val _shareLedgerState = MutableStateFlow<ShareLedgerState>(ShareLedgerState.Idle)
     val shareLedgerState: StateFlow<ShareLedgerState> = _shareLedgerState
+
+    private val _ledgerMembers = MutableStateFlow<Map<Long, List<UserLedgerResponse>>>(emptyMap())
+    val ledgerMembers: StateFlow<Map<Long, List<UserLedgerResponse>>> = _ledgerMembers
 
     private val _updateProfileState = MutableStateFlow<UpdateProfileState>(UpdateProfileState.Idle)
     val updateProfileState: StateFlow<UpdateProfileState> = _updateProfileState
@@ -105,8 +109,34 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
+    fun shareLedgerByUsername(ledgerId: Long, targetUsername: String) {
+        val userId = SessionManager.getUserId()
+        _shareLedgerState.value = ShareLedgerState.Sending
+        viewModelScope.launch {
+            try {
+                // 1. 先用 username 查到 email
+                val userResp = repo.getUserByUsername(targetUsername)
+                // 2. 再用已有的 shareByEmail
+                repo.shareLedgerByEmail(userId, ledgerId, userResp.email)
+                _shareLedgerState.value = ShareLedgerState.Sent
+            } catch (e: Exception) {
+                _shareLedgerState.value = ShareLedgerState.Error(e.message ?: "Share failed")
+            }
+        }
+    }
+
     fun resetShareState() {
         _shareLedgerState.value = ShareLedgerState.Idle
+    }
+    fun loadMembersForLedger(ledgerId: Long) {
+        viewModelScope.launch {
+            try {
+                val members = repo.getMembersByLedger(ledgerId)
+                _ledgerMembers.value = _ledgerMembers.value + (ledgerId to members)
+            } catch (e: Exception) {
+                // 静默失败，列表为空
+            }
+        }
     }
 
     // ── Update profile ─────────────────────────────────────────────────────────

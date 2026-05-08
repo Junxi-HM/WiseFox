@@ -319,7 +319,7 @@ private fun ProfileContent(
     onLogout: () -> Unit
 ) {
     val isPremium = user.role == "PREMIUM"
-
+    var showNonPremiumDialog by remember { mutableStateOf(false) }
     // ── User card ─────────────────────────────────────────────────────────────
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -491,10 +491,34 @@ private fun ProfileContent(
                 onSelect = onLanguageChange
             )
             NotificationsRow()
+
+            if (showNonPremiumDialog) {
+                AlertDialog(
+                    onDismissRequest = { showNonPremiumDialog = false },
+                    containerColor   = WiseFoxSubCardBg,
+                    title = {
+                        Text("Premium Required", color = WiseFoxOrangeDark, fontWeight = FontWeight.Bold)
+                    },
+                    text = {
+                        Text(
+                            "⭐ Only Premium users can access Shared Ledgers.",
+                            color = TextSecondary
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showNonPremiumDialog = false }) {
+                            Text("OK", color = WiseFoxOrangeDark, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                )
+            }
             PreferenceArrowRow(
                 iconRes = R.drawable.ic_shared,
                 label   = stringResource(R.string.shared_ledgers_capital),
-                onClick = { /* TODO: navigate to shared ledgers list */ }
+                onClick = {
+                    if (isPremium) navController.navigate(Screen.SharedLedgers.route)
+                    else showNonPremiumDialog = true
+                }
             )
             PreferenceArrowRow(
                 iconRes = R.drawable.ic_security,
@@ -505,37 +529,6 @@ private fun ProfileContent(
     }
 
     Spacer(modifier = Modifier.height(24.dp))
-
-    // ── My Ledgers / Share section ────────────────────────────────────────────
-    if (ledgers.isNotEmpty()) {
-        Text(
-            text     = stringResource(R.string.my_ledgers_capital),
-            fontSize = 13.sp,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-            style    = MaterialTheme.typography.labelMedium.copy(
-                fontWeight    = FontWeight.Bold,
-                color         = TextSecondary,
-                letterSpacing = 1.sp
-            )
-        )
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape    = RoundedCornerShape(20.dp),
-            colors   = CardDefaults.cardColors(containerColor = SectionCardBg)
-        ) {
-            Column(
-                modifier            = Modifier.fillMaxWidth().padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ledgers.forEach { ledger ->
-                    LedgerShareRow(ledger = ledger, onShare = { onShareLedger(ledger) })
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-    }
 
     // ── Logout button ─────────────────────────────────────────────────────────
     OutlinedButton(
@@ -916,7 +909,7 @@ private fun PreferenceArrowRow(iconRes: Int, label: String, onClick: () -> Unit)
         Icon(
             painter             = painterResource(id = R.drawable.ic_arrow_right),
             contentDescription  = null,
-            tint                = TextSecondary,
+            tint                = Color.Unspecified,
             modifier            = Modifier.size(20.dp)
         )
     }

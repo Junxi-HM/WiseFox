@@ -13,6 +13,9 @@ interface UserApiService {
     @GET("api/user/{id}")
     suspend fun getUserById(@Path("id") id: Long): Response<UserResponse>
 
+    @GET("api/user/username/{username}")
+    suspend fun getUserByUsername(@Path("username") username: String): Response<UserResponse>
+
     // ── GET profile picture ────────────────────────────────────────────────
     @GET("api/user/{id}/pfp")
     suspend fun getProfilePicture(@Path("id") id: Long): Response<ResponseBody>

@@ -1,10 +1,12 @@
 package com.example.wisefox.repository
 
 import com.example.wisefox.model.LedgerResponse
+import com.example.wisefox.model.UserLedgerResponse
 import com.example.wisefox.model.UserResponse
 import com.example.wisefox.network.RetrofitClient
 import com.example.wisefox.network.ShareLedgerRequest
 import com.example.wisefox.network.UserApiService
+import com.example.wisefox.network.UserLedgerApiService
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -15,6 +17,8 @@ class UserRepository {
 
     private val api: UserApiService =
         RetrofitClient.instance.create(UserApiService::class.java)
+    private val userLedgerApi: UserLedgerApiService =
+        RetrofitClient.instance.create(UserLedgerApiService::class.java)
 
     private val imageJpeg = "image/jpeg".toMediaTypeOrNull()
 
@@ -115,8 +119,29 @@ class UserRepository {
             ShareLedgerRequest(ownerUserId, ledgerId, targetEmail)
         )
         if (!response.isSuccessful) {
-            throw Exception("Share failed (${response.code()})")
+            val errorJson = response.errorBody()?.string() ?: ""
+            val message = when {
+                response.code() == 409 -> "This user is already a member of this ledger."
+                response.code() == 404 -> "User not found."
+                errorJson.contains("already a member", ignoreCase = true) ->
+                    "This user is already a member of this ledger."
+                errorJson.contains("not found", ignoreCase = true) ->
+                    "User not found."
+                else -> "Share failed (${response.code()})"
+            }
+            throw Exception(message)
         }
+    }
+
+    suspend fun getUserByUsername(username: String): UserResponse {
+        val resp = api.getUserByUsername(username)
+        if (resp.isSuccessful) return resp.body()!!
+        throw Exception("User not found: $username")
+    }
+
+    suspend fun getMembersByLedger(ledgerId: Long): List<UserLedgerResponse> {
+        val resp = userLedgerApi.getMembersByLedger(ledgerId)
+        return if (resp.isSuccessful) resp.body() ?: emptyList() else emptyList()
     }
 
     // ── List ledgers for a user ────────────────────────────────────────────────

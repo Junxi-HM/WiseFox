@@ -62,8 +62,8 @@ class TransactionsViewModel : ViewModel() {
                 val resp = ledgerApi.getLedgers(userId)
                 if (!resp.isSuccessful) { _isLoading.value = false; return@launch }
                 val all = resp.body() ?: emptyList()
-                _soloLedgers.value   = all.filter { it.ownerId == userId }
-                _sharedLedgers.value = all.filter { it.ownerId != userId }
+                _soloLedgers.value   = all.filter { it.ownerId == userId && it.memberCount <= 1 }
+                _sharedLedgers.value = all.filter { it.ownerId != userId || it.memberCount > 1 }
                 reloadTransactions()
             } catch (e: Exception) {
                 _isLoading.value = false

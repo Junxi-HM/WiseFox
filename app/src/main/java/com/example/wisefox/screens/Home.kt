@@ -42,6 +42,16 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.wisefox.utils.SessionManager
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
+import com.example.wisefox.viewmodels.HomeViewModel.UsernameCheckState
 
 private val expensesColor = Color(0xFFE06030)
 private val earningsColor = Color(0xFF4A9E6A)
@@ -55,6 +65,8 @@ fun HomeScreen(
 ) {
     var isShared      by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showTypePicker       by remember { mutableStateOf(false) }
+    var showCreateSharedDialog by remember { mutableStateOf(false) }
     var editTarget    by remember { mutableStateOf<LedgerUiModel?>(null) }
     var deleteTarget  by remember { mutableStateOf<LedgerUiModel?>(null) }
 
@@ -86,6 +98,7 @@ fun HomeScreen(
         when (crudState) {
             is LedgerCrudState.Success -> {
                 showCreateDialog = false
+                showCreateSharedDialog = false
                 editTarget = null
                 vm.resetCrudState()
             }
@@ -109,7 +122,7 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 24.dp)
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
             ) {
                 // ── Header ────────────────────────────────────────────────
                 Row(
@@ -128,11 +141,11 @@ fun HomeScreen(
                     Image(
                         painter = painterResource(id = R.drawable.ic_wisefox_icon),
                         contentDescription = null,
-                        modifier = Modifier.size(100.dp)
+                        modifier = Modifier.size(90.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // ── Stats Row ─────────────────────────────────────────────
                 Row(
@@ -155,7 +168,7 @@ fun HomeScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // ── Ledgers Header ────────────────────────────────────────
                 Row(
@@ -193,7 +206,7 @@ fun HomeScreen(
                     LegendItem(stringResource(R.string.bar), stringResource(R.string.earnings), earningsColor)
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // ── Ledger list ───────────────────────────────────────────
                 if (isLoading) {
@@ -209,22 +222,88 @@ fun HomeScreen(
                         )
                     }
                 } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        items(activeLedgers, key = { it.ledger.id }) { uiModel ->
-                            LedgerCard(
-                                uiModel   = uiModel,
-                                isOwned   = !isShared,
-                                onClick   = {
-                                    navController.navigate(
-                                        Screen.LedgerDetail.createRoute(uiModel.ledger.id)
+                    if (!isShared) {
+                        // ── Solo tab：原有逻辑不变 ────────────────────────────────
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            items(activeLedgers, key = { it.ledger.id }) { uiModel ->
+                                val currentUserId = SessionManager.getUserId()
+                                LedgerCard(
+                                    uiModel  = uiModel,
+                                    isOwned  = uiModel.ledger.ownerId == currentUserId,
+                                    onClick  = {
+                                        navController.navigate(
+                                            Screen.LedgerDetail.createRoute(uiModel.ledger.id)
+                                        )
+                                    },
+                                    onEdit   = { editTarget = uiModel },
+                                    onDelete = { deleteTarget = uiModel }
+                                )
+                            }
+                        }
+                    } else {
+                        // ── Shared tab：分 owner / member 两个区域 ────────────────
+                        val currentUserId = SessionManager.getUserId()
+                        val ownedShared  = activeLedgers.filter { it.ledger.ownerId == currentUserId }
+                        val joinedShared = activeLedgers.filter { it.ledger.ownerId != currentUserId }
+
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            // ── My Shared Ledgers ─────────────────────────────────
+                            if (ownedShared.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "My Shared Ledgers",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WiseFoxOrangeDark,
+                                        modifier = Modifier.padding(vertical = 4.dp)
                                     )
-                                },
-                                onEdit    = { editTarget = uiModel },
-                                onDelete  = { deleteTarget = uiModel }
-                            )
+                                }
+                                items(ownedShared, key = { it.ledger.id }) { uiModel ->
+                                    LedgerCard(
+                                        uiModel  = uiModel,
+                                        isOwned  = true,
+                                        onClick  = {
+                                            navController.navigate(
+                                                Screen.LedgerDetail.createRoute(uiModel.ledger.id)
+                                            )
+                                        },
+                                        onEdit   = { editTarget = uiModel },
+                                        onDelete = { deleteTarget = uiModel }
+                                    )
+                                }
+                            }
+
+                            // ── Joined Ledgers ────────────────────────────────────
+                            if (joinedShared.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Joined Ledgers",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextSecondary,
+                                        modifier = Modifier.padding(top = if (ownedShared.isNotEmpty()) 12.dp else 4.dp, bottom = 4.dp)
+                                    )
+                                }
+                                items(joinedShared, key = { it.ledger.id }) { uiModel ->
+                                    LedgerCard(
+                                        uiModel  = uiModel,
+                                        isOwned  = false,
+                                        onClick  = {
+                                            navController.navigate(
+                                                Screen.LedgerDetail.createRoute(uiModel.ledger.id)
+                                            )
+                                        },
+                                        onEdit   = { editTarget = uiModel },
+                                        onDelete = { deleteTarget = uiModel }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -237,7 +316,7 @@ fun HomeScreen(
 
             // ── FAB ───────────────────────────────────────────────────────
             FloatingActionButton(
-                onClick = { showCreateDialog = true },
+                onClick = { showTypePicker = true },
                 shape = CircleShape,
                 containerColor = WiseFoxOrange,
                 contentColor = Color.White,
@@ -251,7 +330,31 @@ fun HomeScreen(
             }
         }
     }
+// ── Ledger type picker ─────────────────────────────────────────────────────
+    if (showTypePicker) {
+        val isPremium = SessionManager.isPremium()
+        LedgerTypePickerDialog(
+            isPremium     = isPremium,
+            onSelectPersonal = { showTypePicker = false; showCreateDialog = true },
+            onSelectShared   = { showTypePicker = false; showCreateSharedDialog = true },
+            onDismiss        = { showTypePicker = false }
+        )
+    }
 
+// ── Create shared dialog ───────────────────────────────────────────────────
+    if (showCreateSharedDialog) {
+        val usernameStates by vm.usernameCheckState.collectAsStateWithLifecycle()
+        SharedLedgerFormDialog(
+            isLoading            = crudState is LedgerCrudState.Loading,
+            usernameCheckState   = usernameStates,
+            onCheckUsername      = { vm.checkUsername(it) },
+            onClearUsernameStates = { vm.clearUsernameCheckState() },
+            onDismiss            = { showCreateSharedDialog = false },
+            onConfirm            = { name, currency, description, members ->
+                vm.createSharedLedger(name, currency, description, members)
+            }
+        )
+    }
     // ── Create dialog ──────────────────────────────────────────────────────
     if (showCreateDialog) {
         LedgerFormDialog(
@@ -620,6 +723,371 @@ private fun SelectorOption(text: String, isSelected: Boolean, onClick: () -> Uni
         Box(modifier = Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
             Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold,
                 color = if (isSelected) Color.White else Color.Black)
+        }
+    }
+}
+
+// ── Ledger type picker dialog ─────────────────────────────────────────────
+
+@Composable
+private fun LedgerTypePickerDialog(
+    isPremium: Boolean,
+    onSelectPersonal: () -> Unit,
+    onSelectShared: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var showPremiumWarning by remember { mutableStateOf(false) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.45f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                shape  = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        text = "NEW LEDGER",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = WiseFoxOrangeDark,
+                        letterSpacing = 1.sp
+                    )
+                    Text("Choose ledger type:", color = TextSecondary, fontSize = 14.sp)
+
+                    // Personal
+                    Button(
+                        onClick = onSelectPersonal,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape  = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = WiseFoxOrange)
+                    ) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Personal Ledger", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Shared
+                    Button(
+                        onClick = {
+                            if (isPremium) onSelectShared()
+                            else showPremiumWarning = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape  = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isPremium) WiseFoxOrange else Color(0xFFBBBBBB)
+                        )
+                    ) {
+                        Icon(Icons.Default.Group, contentDescription = null, tint = Color.White)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Shared Ledger", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    if (showPremiumWarning) {
+                        Text(
+                            text = "⭐ Only Premium users can create shared ledgers.",
+                            color = WiseFoxOrangeDark,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Cancel", color = TextPrimary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Shared ledger form dialog ─────────────────────────────────────────────────
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SharedLedgerFormDialog(
+    isLoading: Boolean,
+    usernameCheckState: Map<String, UsernameCheckState>,
+    onCheckUsername: (String) -> Unit,
+    onClearUsernameStates: () -> Unit,
+    onConfirm: (name: String, currency: String, description: String?, members: List<String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name          by remember { mutableStateOf("") }
+    var currency      by remember { mutableStateOf("EUR") }
+    var description   by remember { mutableStateOf("") }
+    var memberInput   by remember { mutableStateOf("") }
+    var members       by remember { mutableStateOf(listOf<String>()) }
+    var memberError   by remember { mutableStateOf<String?>(null) }
+
+    val currentInputState = usernameCheckState[memberInput.trim()]
+
+    DisposableEffect(Unit) { onDispose { onClearUsernameStates() } }
+
+    Dialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.45f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                shape  = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = WiseFoxSubCardBg)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        text = "NEW SHARED LEDGER",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = WiseFoxOrangeDark,
+                        letterSpacing = 1.sp
+                    )
+
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Name", color = TextPrimary) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ledgerDialogFieldColors()
+                    )
+
+                    OutlinedTextField(
+                        value = currency,
+                        onValueChange = { currency = it },
+                        label = { Text("Currency", color = TextPrimary) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ledgerDialogFieldColors()
+                    )
+
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description (optional)", color = TextPrimary) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ledgerDialogFieldColors()
+                    )
+
+                    // ── Member input ──────────────────────────────────────
+                    Text(
+                        "Members (min. 1 required)",
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = memberInput,
+                            onValueChange = { input ->
+                                memberInput = input
+                                memberError = null
+                                if (input.trim().isNotEmpty()) onCheckUsername(input.trim())
+                            },
+                            label = { Text("Username", color = TextPrimary) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            isError = currentInputState is UsernameCheckState.NotFound || memberError != null,
+                            trailingIcon = {
+                                when (currentInputState) {
+                                    is UsernameCheckState.Loading ->
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(18.dp),
+                                            color = WiseFoxOrange,
+                                            strokeWidth = 2.dp
+                                        )
+                                    is UsernameCheckState.Found ->
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color(0xFF4CAF50),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    is UsernameCheckState.NotFound ->
+                                        Icon(
+                                            Icons.Default.Cancel,
+                                            contentDescription = null,
+                                            tint = Color(0xFFE06030),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    null -> {}
+                                }
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor   = when (currentInputState) {
+                                    is UsernameCheckState.Found    -> Color(0xFF4CAF50)
+                                    is UsernameCheckState.NotFound -> Color(0xFFE06030)
+                                    else -> WiseFoxOrange
+                                },
+                                unfocusedBorderColor = when (currentInputState) {
+                                    is UsernameCheckState.Found    -> Color(0xFF4CAF50)
+                                    is UsernameCheckState.NotFound -> Color(0xFFE06030)
+                                    else -> WiseFoxOrangeDark.copy(alpha = 0.4f)
+                                },
+                                focusedLabelColor    = WiseFoxOrange,
+                                unfocusedLabelColor  = TextPrimary.copy(alpha = 0.7f),
+                                focusedTextColor     = TextPrimary,
+                                unfocusedTextColor   = TextPrimary,
+                                errorTextColor       = Color(0xFF1A1A1A),
+                                cursorColor          = WiseFoxOrange,
+                                errorBorderColor     = Color(0xFFE06030),
+                                errorLabelColor      = Color(0xFFE06030)
+                            )
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        IconButton(
+                            onClick = {
+                                val trimmed = memberInput.trim()
+                                when {
+                                    trimmed.isEmpty()                          -> memberError = "Enter a username"
+                                    members.contains(trimmed)                  -> memberError = "Already added"
+                                    currentInputState !is UsernameCheckState.Found -> memberError = "Verify username first"
+                                    else -> {
+                                        members = members + trimmed
+                                        memberInput = ""
+                                        memberError = null
+                                    }
+                                }
+                            },
+                            enabled = currentInputState is UsernameCheckState.Found
+                        ) {
+                            Icon(
+                                Icons.Default.AddCircle,
+                                contentDescription = "Add member",
+                                tint = if (currentInputState is UsernameCheckState.Found)
+                                    WiseFoxOrange else Color(0xFFBBBBBB),
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
+                    // 状态提示文字
+                    when {
+                        memberError != null ->
+                            Text(memberError!!, color = Color(0xFFE06030), fontSize = 12.sp)
+                        currentInputState is UsernameCheckState.NotFound ->
+                            Text(
+                                "User \"${memberInput.trim()}\" not found",
+                                color = Color(0xFFE06030),
+                                fontSize = 12.sp
+                            )
+                        currentInputState is UsernameCheckState.Found
+                                && !members.contains(memberInput.trim()) ->
+                            Text(
+                                "✓ User found — press + to add",
+                                color = Color(0xFF4CAF50),
+                                fontSize = 12.sp
+                            )
+                    }
+
+                    // 已添加成员 chips
+                    if (members.isNotEmpty()) {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement   = Arrangement.spacedBy(4.dp)
+                        ) {
+                            members.forEach { m ->
+                                InputChip(
+                                    selected = false,
+                                    onClick  = { members = members - m },
+                                    label    = { Text(m, color = TextPrimary, fontSize = 13.sp) },
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Default.Cancel,
+                                            contentDescription = "Remove $m",
+                                            tint = TextSecondary,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    },
+                                    colors = InputChipDefaults.inputChipColors(
+                                        containerColor = WiseFoxOrange.copy(alpha = 0.15f)
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    // 按钮行
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick  = onDismiss,
+                            modifier = Modifier.weight(1f),
+                            enabled  = !isLoading,
+                            shape    = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Cancel", color = TextPrimary)
+                        }
+                        Button(
+                            onClick = {
+                                if (members.isEmpty()) {
+                                    memberError = "Add at least one member"
+                                    return@Button
+                                }
+                                if (name.isBlank()) return@Button
+                                onConfirm(
+                                    name.trim(),
+                                    currency.trim().ifBlank { "EUR" },
+                                    description.trim().ifBlank { null },
+                                    members
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled  = !isLoading && name.isNotBlank() && currency.isNotBlank(),
+                            shape    = RoundedCornerShape(12.dp),
+                            colors   = ButtonDefaults.buttonColors(containerColor = WiseFoxOrange)
+                        ) {
+                            if (isLoading) CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                            else Text("Create", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
         }
     }
 }

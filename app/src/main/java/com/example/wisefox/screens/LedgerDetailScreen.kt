@@ -11,11 +11,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,8 +28,10 @@ import androidx.navigation.NavController
 import com.example.wisefox.model.LedgerResponse
 import com.example.wisefox.model.TransactionResponse
 import com.example.wisefox.ui.theme.*
+import com.example.wisefox.utils.SessionManager
 import com.example.wisefox.viewmodels.LedgerDetailViewModel
 import com.example.wisefox.viewmodels.TxCrudState
+import com.example.wisefox.R
 
 @Composable
 fun LedgerDetailScreen(
@@ -41,6 +46,16 @@ fun LedgerDetailScreen(
 
     var showForm      by remember { mutableStateOf(false) }
     var txToDelete    by remember { mutableStateOf<TransactionResponse?>(null) }
+    var showEditLedger   by remember { mutableStateOf(false) }
+    var showDeleteLedger by remember { mutableStateOf(false) }
+    var showShareLedger  by remember { mutableStateOf(false) }
+    var shareEmail       by remember { mutableStateOf("") }
+    var shareError       by remember { mutableStateOf<String?>(null) }
+    var shareSuccess     by remember { mutableStateOf(false) }
+
+    val currentUserId = SessionManager.getUserId()
+    val isOwner       = ledger.ownerId == currentUserId
+    val isShared      = ledger.memberCount > 1
 
     LaunchedEffect(crudState) {
         if (crudState is TxCrudState.Success) {
@@ -89,6 +104,38 @@ fun LedgerDetailScreen(
                                 fontSize = 12.sp,
                                 color = TextSecondary
                             )
+                        }
+
+                    }
+                    // ── Action buttons ──────────────────────────────────────
+                    if (isOwner) {
+                        Row {
+                            IconButton(onClick = { showEditLedger = true }) {
+                                Icon(
+                                    painter            = painterResource(R.drawable.ic_edit),
+                                    contentDescription = "Edit",
+                                    tint               = WiseFoxOrangeDark,
+                                    modifier           = Modifier.size(22.dp)
+                                )
+                            }
+                            IconButton(onClick = { showDeleteLedger = true }) {
+                                Icon(
+                                    imageVector        = Icons.Default.Delete,
+                                    contentDescription = "Delete ledger",
+                                    tint               = Color(0xFFE06030),
+                                    modifier           = Modifier.size(22.dp)
+                                )
+                            }
+                            if (isShared) {
+                                IconButton(onClick = { showShareLedger = true }) {
+                                    Icon(
+                                        imageVector        = Icons.Default.Share,
+                                        contentDescription = "Share",
+                                        tint               = WiseFoxOrangeDark,
+                                        modifier           = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -186,6 +233,134 @@ fun LedgerDetailScreen(
                 }
             },
             containerColor = WiseFoxSubCardBg
+        )
+    }
+    // ── Edit ledger dialog ─────────────────────────────────────────────────
+    if (showEditLedger) {
+        LedgerFormDialog(
+            title     = "EDIT LEDGER",
+            initial   = ledger,
+            isLoading = false,
+            onConfirm = { name, currency, description ->
+                vm.updateLedger(name, currency, description)
+                showEditLedger = false
+            },
+            onDismiss = { showEditLedger = false }
+        )
+    }
+
+    // ── Delete ledger dialog ───────────────────────────────────────────────
+    if (showDeleteLedger) {
+        AlertDialog(
+            onDismissRequest = { showDeleteLedger = false },
+            containerColor   = WiseFoxSubCardBg,
+            title = {
+                Text("Delete Ledger", fontWeight = FontWeight.Bold, color = TextPrimary)
+            },
+            text = {
+                Text(
+                    "Delete \"${ledger.name}\"? All transactions will be lost.",
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.deleteLedger()
+                    showDeleteLedger = false
+                    navController.popBackStack()
+                }) {
+                    Text("Delete", color = Color(0xFFE06030), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteLedger = false }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            }
+        )
+    }
+
+    // ── Share ledger dialog ────────────────────────────────────────────────
+    if (showShareLedger) {
+        AlertDialog(
+            onDismissRequest = {
+                showShareLedger = false
+                shareEmail      = ""
+                shareError      = null
+                shareSuccess    = false
+            },
+            containerColor = WiseFoxSubCardBg,
+            title = {
+                Text("Share Ledger", fontWeight = FontWeight.Bold, color = WiseFoxOrangeDark)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (shareSuccess) {
+                        Text(
+                            "✓ Shared successfully!",
+                            color      = Color(0xFF4CAF50),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    } else {
+                        OutlinedTextField(
+                            value         = shareEmail,
+                            onValueChange = { shareEmail = it; shareError = null },
+                            label         = { Text("Username", color = TextPrimary) },
+                            singleLine    = true,
+                            isError       = shareError != null,
+                            modifier      = Modifier.fillMaxWidth(),
+                            colors        = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor   = WiseFoxOrange,
+                                unfocusedBorderColor = WiseFoxOrangeDark.copy(alpha = 0.4f),
+                                focusedLabelColor    = WiseFoxOrange,
+                                unfocusedLabelColor  = TextPrimary.copy(alpha = 0.7f),
+                                focusedTextColor     = Color(0xFF1A1A1A),
+                                unfocusedTextColor   = Color(0xFF1A1A1A),
+                                errorTextColor       = Color(0xFF1A1A1A),
+                                cursorColor          = WiseFoxOrange
+                            )
+                        )
+                        if (shareError != null) {
+                            Text(shareError!!, color = Color(0xFFE06030), fontSize = 12.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (shareSuccess) {
+                    TextButton(onClick = {
+                        showShareLedger = false
+                        shareEmail      = ""
+                        shareSuccess    = false
+                    }) {
+                        Text("Close", color = WiseFoxOrangeDark, fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    TextButton(onClick = {
+                        if (shareEmail.isBlank()) {
+                            shareError = "Enter an email"
+                        } else {
+                            vm.shareLedger(shareEmail.trim()) { error ->
+                                if (error == null) shareSuccess = true
+                                else shareError = error
+                            }
+                        }
+                    }) {
+                        Text("Share", color = WiseFoxOrangeDark, fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                if (!shareSuccess) {
+                    TextButton(onClick = {
+                        showShareLedger = false
+                        shareEmail      = ""
+                        shareError      = null
+                    }) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                }
+            }
         )
     }
 }
