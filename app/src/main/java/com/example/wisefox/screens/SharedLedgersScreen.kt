@@ -343,6 +343,7 @@ private fun ShareToUserDialog(
                             unfocusedLabelColor  = TextPrimary.copy(alpha = 0.7f),
                             focusedTextColor     = TextPrimary,
                             unfocusedTextColor   = TextPrimary,
+                            errorTextColor       = Color(0xFF1A1A1A),
                             cursorColor          = WiseFoxOrange
                         )
                     )

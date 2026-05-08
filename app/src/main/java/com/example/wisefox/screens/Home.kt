@@ -122,7 +122,7 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 24.dp)
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
             ) {
                 // ── Header ────────────────────────────────────────────────
                 Row(
@@ -141,11 +141,11 @@ fun HomeScreen(
                     Image(
                         painter = painterResource(id = R.drawable.ic_wisefox_icon),
                         contentDescription = null,
-                        modifier = Modifier.size(100.dp)
+                        modifier = Modifier.size(90.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // ── Stats Row ─────────────────────────────────────────────
                 Row(
@@ -168,7 +168,7 @@ fun HomeScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // ── Ledgers Header ────────────────────────────────────────
                 Row(
@@ -206,7 +206,7 @@ fun HomeScreen(
                     LegendItem(stringResource(R.string.bar), stringResource(R.string.earnings), earningsColor)
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // ── Ledger list ───────────────────────────────────────────
                 if (isLoading) {
@@ -966,6 +966,7 @@ private fun SharedLedgerFormDialog(
                                 unfocusedLabelColor  = TextPrimary.copy(alpha = 0.7f),
                                 focusedTextColor     = TextPrimary,
                                 unfocusedTextColor   = TextPrimary,
+                                errorTextColor       = Color(0xFF1A1A1A),
                                 cursorColor          = WiseFoxOrange,
                                 errorBorderColor     = Color(0xFFE06030),
                                 errorLabelColor      = Color(0xFFE06030)
