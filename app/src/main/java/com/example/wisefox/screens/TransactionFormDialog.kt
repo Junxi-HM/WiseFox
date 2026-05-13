@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -17,6 +18,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.wisefox.model.LedgerResponse
 import com.example.wisefox.ui.theme.*
+import com.example.wisefox.R
 
 // Categories that match the backend enum
 val TRANSACTION_CATEGORIES = listOf(
@@ -67,7 +69,7 @@ fun TransactionFormDialog(
                 ) {
                     // ── Title ─────────────────────────────────────────────
                     Text(
-                        text = "NEW TRANSACTION",
+                        text = stringResource(R.string.new_transaction),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = WiseFoxOrangeDark,
@@ -81,7 +83,7 @@ fun TransactionFormDialog(
                             onExpandedChange = { ledgerExpanded = !ledgerExpanded }
                         ) {
                             OutlinedTextField(
-                                value = selectedLedger?.name ?: "Select ledger",
+                                value = selectedLedger?.name ?: stringResource(R.string.select_ledger),
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("Ledger", color = TextPrimary) },
@@ -207,7 +209,7 @@ fun TransactionFormDialog(
                             enabled = !isLoading,
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Cancel", color = TextPrimary)
+                            Text(stringResource(R.string.cancel), color = TextPrimary)
                         }
                         Button(
                             onClick = {
@@ -227,7 +229,7 @@ fun TransactionFormDialog(
                                 color = Color.White,
                                 strokeWidth = 2.dp
                             )
-                            else Text("Add", color = Color.White, fontWeight = FontWeight.Bold)
+                            else Text(stringResource(R.string.confirm), color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

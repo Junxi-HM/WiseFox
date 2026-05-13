@@ -41,6 +41,15 @@
     <string name="no_ledgers_yet">还没有账本，点击 + 创建一个。</string>
     <string name="no_shared_ledgers">没有共享账本</string>
     <string name="default_tip">本周设置一个 5%% 的自动储蓄规则。</string>
+    <string name="my_shared_ledgers">我的共享账本</string>
+    <string name="joined_ledgers">已加入的账本</string>
+
+    <!-- Ledger type picker -->
+    <string name="new_ledger">新建账本</string>
+    <string name="choose_ledger_type">选择账本类型：</string>
+    <string name="personal_ledger">个人账本</string>
+    <string name="shared_ledger">共享账本</string>
+    <string name="premium_only_shared">⭐ 只有高级会员才能创建共享账本。</string>
 
     <!-- Ledger dialog -->
     <string name="ledger_name">账本名称</string>
@@ -50,8 +59,35 @@
     <string name="delete">删除</string>
     <string name="delete_ledger_title">删除账本？</string>
     <string name="delete_ledger_message">此操作无法撤销。</string>
+    <string name="delete_ledger_all_lost">所有交易记录将丢失。</string>
+    <string name="delete_ledger_confirm">删除\"%s\"？此操作无法撤销。</string>
     <string name="create_ledger">创建账本</string>
     <string name="edit_ledger">编辑账本</string>
+    <string name="new_ledger_title">新建账本</string>
+    <string name="edit_ledger_title">编辑账本</string>
+
+    <!-- Shared ledger form -->
+    <string name="new_shared_ledger">新建共享账本</string>
+    <string name="members_label">成员（至少 1 人）</string>
+    <string name="add_member_username">添加成员用户名</string>
+    <string name="enter_username_error">请输入用户名</string>
+    <string name="already_added_error">已添加</string>
+    <string name="verify_username_first">请先验证用户名</string>
+    <string name="user_not_found_fmt">未找到用户\"%s\"</string>
+    <string name="user_found_add">✓ 找到用户 — 按 + 添加</string>
+    <string name="add_at_least_one_member">至少添加一个成员</string>
+    <string name="create">创建</string>
+
+    <!-- Shared Ledgers screen -->
+    <string name="shared_ledgers_title">共享账本</string>
+    <string name="no_shared_ledgers_yet">您还没有共享账本。\n请在主页创建一个。</string>
+    <string name="members_count">%d 位成员</string>
+    <string name="loading_members">正在加载成员…</string>
+
+    <!-- Ledger Detail screen -->
+    <string name="owner_label">所有者：%s</string>
+    <string name="share_success_short">✓ 共享成功！</string>
+    <string name="share_ledger_by_username">将\"%s\"共享给其他用户</string>
 
     <!-- Transactions -->
     <string name="filter_by_ledger">按账本筛选</string>
@@ -122,6 +158,12 @@
     <string name="save_changes">保存更改</string>
     <string name="password_hint">留空则保持当前密码不变</string>
 
+    <!-- Transaction dialogs -->
+    <string name="delete_transaction_title">删除交易</string>
+    <string name="delete_transaction_message">删除 %s，金额 %.2f€？</string>
+    <string name="delete_transaction_this">该交易</string>
+    <string name="new_transaction">新建交易</string>
+
     <!-- Generic -->
     <string name="loading">加载中…</string>
     <string name="error_generic">出了点问题</string>
@@ -129,4 +171,5 @@
     <!-- Language change confirmation dialog -->
     <string name="language_change_title">切换语言？</string>
     <string name="language_change_message">将应用语言切换为 %s 吗？</string>
+
 </resources>

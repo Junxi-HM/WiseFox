@@ -139,7 +139,7 @@ fun HomeScreen(
                         )
                     )
                     Image(
-                        painter = painterResource(id = R.drawable.ic_wisefox_icon),
+                        painter = painterResource(id = R.drawable.ic_fox_home),
                         contentDescription = null,
                         modifier = Modifier.size(90.dp)
                     )
@@ -215,8 +215,14 @@ fun HomeScreen(
                     }
                 } else if (activeLedgers.isEmpty()) {
                     Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        val noLedgersText = if (isShared) {
+                            stringResource(R.string.no_shared_ledgers)
+                        } else {
+                            stringResource(R.string.no_ledgers_yet)
+                        }
+
                         Text(
-                            text = if (isShared) "No shared ledgers" else "No ledgers yet. Tap + to create one.",
+                            text = noLedgersText,
                             color = TextSecondary,
                             fontSize = 14.sp
                         )
@@ -257,7 +263,7 @@ fun HomeScreen(
                             if (ownedShared.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "My Shared Ledgers",
+                                        text = stringResource(R.string.my_shared_ledgers),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = WiseFoxOrangeDark,
@@ -283,7 +289,7 @@ fun HomeScreen(
                             if (joinedShared.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "Joined Ledgers",
+                                        text = stringResource(R.string.joined_ledgers),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = TextSecondary,
@@ -311,7 +317,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // ── Tip card ──────────────────────────────────────────────
-                TipCard(message = "Set up an automatic 5% saving rule this week.")
+                TipCard(message = stringResource(R.string.default_tip))
             }
 
             // ── FAB ───────────────────────────────────────────────────────
@@ -358,7 +364,7 @@ fun HomeScreen(
     // ── Create dialog ──────────────────────────────────────────────────────
     if (showCreateDialog) {
         LedgerFormDialog(
-            title     = "NEW LEDGER",
+            title = stringResource(R.string.new_ledger_title),
             initial   = null,
             isLoading = crudState is LedgerCrudState.Loading,
             onConfirm = { name, currency, description ->
@@ -371,7 +377,7 @@ fun HomeScreen(
     // ── Edit dialog ────────────────────────────────────────────────────────
     editTarget?.let { target ->
         LedgerFormDialog(
-            title     = "EDIT LEDGER",
+            title = stringResource(R.string.edit_ledger_title),
             initial   = target.ledger,
             isLoading = crudState is LedgerCrudState.Loading,
             onConfirm = { name, currency, description ->
@@ -385,19 +391,19 @@ fun HomeScreen(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Delete Ledger", fontWeight = FontWeight.Bold, color = TextPrimary) },
-            text  = { Text("Delete \"${target.ledger.name}\"? This cannot be undone.", color = TextSecondary) },
+            title = { Text(stringResource(R.string.delete_ledger_title), fontWeight = FontWeight.Bold, color = TextPrimary) },
+            text  = { Text(stringResource(R.string.delete_ledger_confirm, target.ledger.name), color = TextSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     vm.deleteLedger(target.ledger.id)
                     deleteTarget = null
                 }) {
-                    Text("Delete", color = Color(0xFFE06030), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.delete), color = Color(0xFFE06030), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { deleteTarget = null }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(stringResource(R.string.cancel), color = TextSecondary)
                 }
             },
             containerColor = WiseFoxSubCardBg
@@ -586,7 +592,7 @@ fun LedgerFormDialog(
                             enabled = !isLoading,
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Cancel", color = TextPrimary)
+                            Text(stringResource(R.string.cancel),color = TextPrimary)
                         }
                         Button(
                             onClick = {
@@ -762,13 +768,13 @@ private fun LedgerTypePickerDialog(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        text = "NEW LEDGER",
+                        text = stringResource(R.string.new_ledger),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = WiseFoxOrangeDark,
                         letterSpacing = 1.sp
                     )
-                    Text("Choose ledger type:", color = TextSecondary, fontSize = 14.sp)
+                    Text(stringResource(R.string.choose_ledger_type), color = TextSecondary, fontSize = 14.sp)
 
                     // Personal
                     Button(
@@ -779,7 +785,7 @@ private fun LedgerTypePickerDialog(
                     ) {
                         Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
                         Spacer(Modifier.width(8.dp))
-                        Text("Personal Ledger", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.personal_ledger),  color = Color.White, fontWeight = FontWeight.Bold)
                     }
 
                     // Shared
@@ -796,12 +802,12 @@ private fun LedgerTypePickerDialog(
                     ) {
                         Icon(Icons.Default.Group, contentDescription = null, tint = Color.White)
                         Spacer(Modifier.width(8.dp))
-                        Text("Shared Ledger", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.shared_ledger), color = Color.White, fontWeight = FontWeight.Bold)
                     }
 
                     if (showPremiumWarning) {
                         Text(
-                            text = "⭐ Only Premium users can create shared ledgers.",
+                            text = stringResource(R.string.premium_only_shared),
                             color = WiseFoxOrangeDark,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold
@@ -813,7 +819,8 @@ private fun LedgerTypePickerDialog(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Cancel", color = TextPrimary)
+                        Text(stringResource(R.string.cancel), color = TextPrimary)
+
                     }
                 }
             }
@@ -839,6 +846,11 @@ private fun SharedLedgerFormDialog(
     var memberInput   by remember { mutableStateOf("") }
     var members       by remember { mutableStateOf(listOf<String>()) }
     var memberError   by remember { mutableStateOf<String?>(null) }
+
+    val enterUsernameErr = stringResource(R.string.enter_username_error)
+    val alreadyAddedErr = stringResource(R.string.already_added_error)
+    val verifyUsernameErr = stringResource(R.string.verify_username_first)
+    val addAtLeastOneMemberErr = stringResource(R.string.add_at_least_one_member)
 
     val currentInputState = usernameCheckState[memberInput.trim()]
 
@@ -869,7 +881,7 @@ private fun SharedLedgerFormDialog(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        text = "NEW SHARED LEDGER",
+                        text = stringResource(R.string.new_shared_ledger),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = WiseFoxOrangeDark,
@@ -879,7 +891,7 @@ private fun SharedLedgerFormDialog(
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Name", color = TextPrimary) },
+                        label = { Text(stringResource(R.string.ledger_name), color = TextPrimary) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ledgerDialogFieldColors()
@@ -888,7 +900,7 @@ private fun SharedLedgerFormDialog(
                     OutlinedTextField(
                         value = currency,
                         onValueChange = { currency = it },
-                        label = { Text("Currency", color = TextPrimary) },
+                        label = { Text(stringResource(R.string.currency_label), color = TextPrimary) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ledgerDialogFieldColors()
@@ -897,7 +909,7 @@ private fun SharedLedgerFormDialog(
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text("Description (optional)", color = TextPrimary) },
+                        label = { Text(stringResource(R.string.description_optional), color = TextPrimary) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ledgerDialogFieldColors()
@@ -905,7 +917,7 @@ private fun SharedLedgerFormDialog(
 
                     // ── Member input ──────────────────────────────────────
                     Text(
-                        "Members (min. 1 required)",
+                        stringResource(R.string.members_label),
                         color = TextSecondary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
@@ -977,9 +989,9 @@ private fun SharedLedgerFormDialog(
                             onClick = {
                                 val trimmed = memberInput.trim()
                                 when {
-                                    trimmed.isEmpty()                          -> memberError = "Enter a username"
-                                    members.contains(trimmed)                  -> memberError = "Already added"
-                                    currentInputState !is UsernameCheckState.Found -> memberError = "Verify username first"
+                                    trimmed.isEmpty()                          -> memberError = enterUsernameErr
+                                    members.contains(trimmed)                  -> memberError = alreadyAddedErr
+                                    currentInputState !is UsernameCheckState.Found -> memberError = verifyUsernameErr
                                     else -> {
                                         members = members + trimmed
                                         memberInput = ""
@@ -1005,14 +1017,14 @@ private fun SharedLedgerFormDialog(
                             Text(memberError!!, color = Color(0xFFE06030), fontSize = 12.sp)
                         currentInputState is UsernameCheckState.NotFound ->
                             Text(
-                                "User \"${memberInput.trim()}\" not found",
+                                stringResource(R.string.user_not_found_fmt, memberInput.trim()),
                                 color = Color(0xFFE06030),
                                 fontSize = 12.sp
                             )
                         currentInputState is UsernameCheckState.Found
                                 && !members.contains(memberInput.trim()) ->
                             Text(
-                                "✓ User found — press + to add",
+                                stringResource(R.string.user_found_add),
                                 color = Color(0xFF4CAF50),
                                 fontSize = 12.sp
                             )
@@ -1057,12 +1069,12 @@ private fun SharedLedgerFormDialog(
                             enabled  = !isLoading,
                             shape    = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Cancel", color = TextPrimary)
+                            Text(stringResource(R.string.cancel), color = TextPrimary)
                         }
                         Button(
                             onClick = {
                                 if (members.isEmpty()) {
-                                    memberError = "Add at least one member"
+                                    memberError = addAtLeastOneMemberErr
                                     return@Button
                                 }
                                 if (name.isBlank()) return@Button
@@ -1083,7 +1095,7 @@ private fun SharedLedgerFormDialog(
                                 color = Color.White,
                                 strokeWidth = 2.dp
                             )
-                            else Text("Create", color = Color.White, fontWeight = FontWeight.Bold)
+                            else Text(stringResource(R.string.create),color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

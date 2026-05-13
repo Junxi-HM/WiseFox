@@ -41,6 +41,15 @@
     <string name="no_ledgers_yet">Aún no hay libros. Toca + para crear uno.</string>
     <string name="no_shared_ledgers">No hay libros compartidos</string>
     <string name="default_tip">Configura una regla automática de ahorro del 5%% esta semana.</string>
+    <string name="my_shared_ledgers">Mis libros compartidos</string>
+    <string name="joined_ledgers">Libros unidos</string>
+
+    <!-- Ledger type picker -->
+    <string name="new_ledger">NUEVO LIBRO</string>
+    <string name="choose_ledger_type">Elige el tipo de libro:</string>
+    <string name="personal_ledger">Libro personal</string>
+    <string name="shared_ledger">Libro compartido</string>
+    <string name="premium_only_shared">⭐ Solo los usuarios Premium pueden crear libros compartidos.</string>
 
     <!-- Ledger dialog -->
     <string name="ledger_name">Nombre del libro</string>
@@ -50,8 +59,35 @@
     <string name="delete">Eliminar</string>
     <string name="delete_ledger_title">¿Eliminar libro?</string>
     <string name="delete_ledger_message">Esta acción no se puede deshacer.</string>
+    <string name="delete_ledger_all_lost">Se perderán todas las transacciones.</string>
+    <string name="delete_ledger_confirm">¿Eliminar \"%s\"? Esta acción no se puede deshacer.</string>
     <string name="create_ledger">Crear libro</string>
     <string name="edit_ledger">Editar libro</string>
+    <string name="new_ledger_title">NUEVO LIBRO</string>
+    <string name="edit_ledger_title">EDITAR LIBRO</string>
+
+    <!-- Shared ledger form -->
+    <string name="new_shared_ledger">NUEVO LIBRO COMPARTIDO</string>
+    <string name="members_label">Miembros (mín. 1)</string>
+    <string name="add_member_username">Añadir usuario miembro</string>
+    <string name="enter_username_error">Introduce un nombre de usuario</string>
+    <string name="already_added_error">Ya añadido</string>
+    <string name="verify_username_first">Verifica el usuario primero</string>
+    <string name="user_not_found_fmt">Usuario \"%s\" no encontrado</string>
+    <string name="user_found_add">✓ Usuario encontrado — pulsa + para añadir</string>
+    <string name="add_at_least_one_member">Añade al menos un miembro</string>
+    <string name="create">Crear</string>
+
+    <!-- Shared Ledgers screen -->
+    <string name="shared_ledgers_title">LIBROS COMPARTIDOS</string>
+    <string name="no_shared_ledgers_yet">Aún no tienes libros compartidos.\nCrea uno desde la pantalla de inicio.</string>
+    <string name="members_count">%d miembros</string>
+    <string name="loading_members">Cargando miembros…</string>
+
+    <!-- Ledger Detail screen -->
+    <string name="owner_label">Propietario: %s</string>
+    <string name="share_success_short">✓ ¡Compartido con éxito!</string>
+    <string name="share_ledger_by_username">Compartir \"%s\" con otro usuario</string>
 
     <!-- Transactions -->
     <string name="filter_by_ledger">Filtrar por libro</string>
@@ -84,8 +120,8 @@
     <string name="ai_paywall_message">Desbloquea consejos de IA con Premium</string>
     <string name="ai_paywall_cta">Hazte Premium</string>
     <string name="advice_save_10pct">Intenta ahorrar al menos el 10%% de tus ingresos mensuales.</string>
-    <string name="advice_wait_24h">Evita compras impulsivas: espera 24 horas antes de comprar.</string>
-    <string name="advice_track_small">Registra cada gasto, incluso los pequeños — suman rápido.</string>
+    <string name="advice_wait_24h">Evita las compras impulsivas esperando 24 horas antes de comprar.</string>
+    <string name="advice_track_small">Registra cada gasto, incluso los pequeños — se acumulan rápido.</string>
 
     <!-- Profile -->
     <string name="language_capital">IDIOMA</string>
@@ -96,18 +132,18 @@
     <string name="my_ledgers_capital">MIS LIBROS</string>
     <string name="premium_member">MIEMBRO PREMIUM</string>
     <string name="standard_member">ESTÁNDAR</string>
-    <string name="edit_profile">Editar Perfil</string>
-    <string name="logout">Cerrar Sesión</string>
+    <string name="edit_profile">Editar perfil</string>
+    <string name="logout">Cerrar sesión</string>
     <string name="logout_confirm_message">¿Seguro que quieres cerrar sesión?</string>
     <string name="back">Atrás</string>
 
     <!-- Share ledger dialog -->
-    <string name="share_ledger_title">Compartir Libro</string>
+    <string name="share_ledger_title">Compartir libro</string>
     <string name="share_ledger_subtitle">Invitar a alguien a unirse a \"%s\"</string>
-    <string name="recipient_email">Email del destinatario</string>
+    <string name="recipient_email">Correo del destinatario</string>
     <string name="share_sent_success">¡Invitación enviada con éxito! ✓</string>
     <string name="share_premium_required">Compartir libros es una función Premium. Actualiza tu cuenta para colaborar con otros.</string>
-    <string name="upgrade_to_premium_hint">🦊 ¡Hazte Premium para desbloquear el uso compartido!</string>
+    <string name="upgrade_to_premium_hint">🦊 ¡Hazte Premium para desbloquear el uso compartido de libros!</string>
     <string name="share_capital">COMPARTIR</string>
     <string name="send_capital">ENVIAR</string>
     <string name="close">Cerrar</string>
@@ -117,10 +153,16 @@
     <!-- Edit Profile -->
     <string name="profile_photo">FOTO DE PERFIL</string>
     <string name="tap_to_change_photo">Toca para cambiar la foto</string>
-    <string name="personal_info_capital">INFORMACIÓN PERSONAL</string>
-    <string name="account_info_capital">INFORMACIÓN DE CUENTA</string>
-    <string name="save_changes">Guardar Cambios</string>
-    <string name="password_hint">Deja en blanco para mantener tu contraseña actual</string>
+    <string name="personal_info_capital">INFO PERSONAL</string>
+    <string name="account_info_capital">INFO DE CUENTA</string>
+    <string name="save_changes">Guardar cambios</string>
+    <string name="password_hint">Deja en blanco para mantener la contraseña actual</string>
+
+    <!-- Transaction dialogs -->
+    <string name="delete_transaction_title">¿Eliminar transacción?</string>
+    <string name="delete_transaction_message">¿Eliminar %s de %.2f€?</string>
+    <string name="delete_transaction_this">esta transacción</string>
+    <string name="new_transaction">NUEVA TRANSACCIÓN</string>
 
     <!-- Generic -->
     <string name="loading">Cargando…</string>
@@ -129,4 +171,5 @@
     <!-- Language change confirmation dialog -->
     <string name="language_change_title">¿Cambiar idioma?</string>
     <string name="language_change_message">¿Cambiar el idioma de la app a %s?</string>
+
 </resources>

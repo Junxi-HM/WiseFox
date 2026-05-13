@@ -41,6 +41,15 @@
     <string name="no_ledgers_yet">No ledgers yet. Tap + to create one.</string>
     <string name="no_shared_ledgers">No shared ledgers</string>
     <string name="default_tip">Set up an automatic 5%% saving rule this week.</string>
+    <string name="my_shared_ledgers">My Shared Ledgers</string>
+    <string name="joined_ledgers">Joined Ledgers</string>
+
+    <!-- Ledger type picker -->
+    <string name="new_ledger">NEW LEDGER</string>
+    <string name="choose_ledger_type">Choose ledger type:</string>
+    <string name="personal_ledger">Personal Ledger</string>
+    <string name="shared_ledger">Shared Ledger</string>
+    <string name="premium_only_shared">⭐ Only Premium users can create shared ledgers.</string>
 
     <!-- Ledger dialog -->
     <string name="ledger_name">Ledger name</string>
@@ -50,8 +59,35 @@
     <string name="delete">Delete</string>
     <string name="delete_ledger_title">Delete ledger?</string>
     <string name="delete_ledger_message">This action cannot be undone.</string>
+    <string name="delete_ledger_all_lost">All transactions will be lost.</string>
+    <string name="delete_ledger_confirm">Delete \"%s\"? This cannot be undone.</string>
     <string name="create_ledger">Create ledger</string>
     <string name="edit_ledger">Edit ledger</string>
+    <string name="new_ledger_title">NEW LEDGER</string>
+    <string name="edit_ledger_title">EDIT LEDGER</string>
+
+    <!-- Shared ledger form -->
+    <string name="new_shared_ledger">NEW SHARED LEDGER</string>
+    <string name="members_label">Members (min. 1)</string>
+    <string name="add_member_username">Add member username</string>
+    <string name="enter_username_error">Enter a username</string>
+    <string name="already_added_error">Already added</string>
+    <string name="verify_username_first">Verify username first</string>
+    <string name="user_not_found_fmt">User \"%s\" not found</string>
+    <string name="user_found_add">✓ User found — press + to add</string>
+    <string name="add_at_least_one_member">Add at least one member</string>
+    <string name="create">Create</string>
+
+    <!-- Shared Ledgers screen -->
+    <string name="shared_ledgers_title">SHARED LEDGERS</string>
+    <string name="no_shared_ledgers_yet">You don\'t have any shared ledgers yet.\nCreate one from the Home screen.</string>
+    <string name="members_count">%d members</string>
+    <string name="loading_members">Loading members…</string>
+
+    <!-- Ledger Detail screen -->
+    <string name="owner_label">Owner: %s</string>
+    <string name="share_success_short">✓ Shared successfully!</string>
+    <string name="share_ledger_by_username">Share \"%s\" with another user</string>
 
     <!-- Transactions -->
     <string name="filter_by_ledger">Filter by Ledger</string>
@@ -122,6 +158,12 @@
     <string name="save_changes">Save Changes</string>
     <string name="password_hint">Leave blank to keep your current password</string>
 
+    <!-- Transaction dialogs -->
+    <string name="delete_transaction_title">Delete Transaction</string>
+    <string name="delete_transaction_message">Delete %s of %.2f€?</string>
+    <string name="delete_transaction_this">this transaction</string>
+    <string name="new_transaction">NEW TRANSACTION</string>
+
     <!-- Generic -->
     <string name="loading">Loading…</string>
     <string name="error_generic">Something went wrong</string>
@@ -129,4 +171,5 @@
     <!-- Language change confirmation dialog -->
     <string name="language_change_title">Change language?</string>
     <string name="language_change_message">Switch the app language to %s?</string>
+
 </resources>

@@ -459,7 +459,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .size(100.dp)
                     .align(Alignment.TopStart)
-                    .offset(x = 25.dp, y = (-30).dp)
+                    .offset(x = 8.dp, y = (-33).dp)
             )
         }
     }
