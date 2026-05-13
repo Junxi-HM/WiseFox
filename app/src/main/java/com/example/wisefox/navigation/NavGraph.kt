@@ -38,8 +38,18 @@ fun WiseFoxNavGraph(navController: NavHostController) {
 
     NavHost(
         navController    = navController,
-        startDestination = Screen.Login.route
+        startDestination = Screen.Splash.route
     ) {
+// ── Splash ─────────────────────────────────────────────────────────────
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onSplashFinished = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
 
 // ── Login ─────────────────────────────────────────────────────────────
         composable(Screen.Login.route) {

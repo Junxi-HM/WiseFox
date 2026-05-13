@@ -20,7 +20,10 @@ object RetrofitClient {
         "api/auth/register",
         "api/auth/google",
         "api/auth/verify-code",
-        "api/auth/register/google"
+        "api/auth/register/google",
+        "/api/auth/forgot-password",
+        "/api/auth/verify-reset-code",
+        "/api/auth/reset-password"
     )
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
