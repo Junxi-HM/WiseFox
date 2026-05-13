@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,7 +90,7 @@ fun LedgerDetailScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = WiseFoxOrangeDark)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = WiseFoxOrangeDark)
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -100,7 +102,7 @@ fun LedgerDetailScreen(
                         )
                         if (!ledger.ownerUsername.isNullOrBlank()) {
                             Text(
-                                text = "Owner: ${ledger.ownerUsername}",
+                                text = stringResource(R.string.owner_label, ledger.ownerUsername ?: ""),
                                 fontSize = 12.sp,
                                 color = TextSecondary
                             )
@@ -212,10 +214,11 @@ fun LedgerDetailScreen(
     txToDelete?.let { tx ->
         AlertDialog(
             onDismissRequest = { txToDelete = null },
-            title = { Text("Delete Transaction", fontWeight = FontWeight.Bold, color = TextPrimary) },
+            title = { Text(stringResource(R.string.delete_transaction_title), fontWeight = FontWeight.Bold, color = TextPrimary) },
             text  = {
+                val txName = tx.category?.name ?: stringResource(R.string.delete_transaction_this)
                 Text(
-                    "Delete ${tx.category?.name ?: "this transaction"} of ${"%.2f".format(tx.amount ?: 0.0)}€?",
+                    stringResource(R.string.delete_transaction_message, txName, tx.amount ?: 0.0),
                     color = TextSecondary
                 )
             },
@@ -224,12 +227,12 @@ fun LedgerDetailScreen(
                     tx.id?.let { vm.deleteTransaction(it) }
                     txToDelete = null
                 }) {
-                    Text("Delete", color = Color(0xFFE06030), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.delete), color = Color(0xFFE06030), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { txToDelete = null }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(stringResource(R.string.cancel), color = TextSecondary)
                 }
             },
             containerColor = WiseFoxSubCardBg
@@ -238,7 +241,7 @@ fun LedgerDetailScreen(
     // ── Edit ledger dialog ─────────────────────────────────────────────────
     if (showEditLedger) {
         LedgerFormDialog(
-            title     = "EDIT LEDGER",
+            title     = stringResource(R.string.edit_ledger_title),
             initial   = ledger,
             isLoading = false,
             onConfirm = { name, currency, description ->
@@ -255,11 +258,12 @@ fun LedgerDetailScreen(
             onDismissRequest = { showDeleteLedger = false },
             containerColor   = WiseFoxSubCardBg,
             title = {
-                Text("Delete Ledger", fontWeight = FontWeight.Bold, color = TextPrimary)
+                Text(stringResource(R.string.delete_ledger_title), fontWeight = FontWeight.Bold, color = TextPrimary)
             },
             text = {
                 Text(
-                    "Delete \"${ledger.name}\"? All transactions will be lost.",
+                    stringResource(R.string.delete_ledger_confirm, ledger.name) + "\n" +
+                            stringResource(R.string.delete_ledger_all_lost),
                     color = TextSecondary
                 )
             },
@@ -269,12 +273,12 @@ fun LedgerDetailScreen(
                     showDeleteLedger = false
                     navController.popBackStack()
                 }) {
-                    Text("Delete", color = Color(0xFFE06030), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.delete), color = Color(0xFFE06030), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteLedger = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(stringResource(R.string.cancel), color = TextSecondary)
                 }
             }
         )
@@ -291,13 +295,13 @@ fun LedgerDetailScreen(
             },
             containerColor = WiseFoxSubCardBg,
             title = {
-                Text("Share Ledger", fontWeight = FontWeight.Bold, color = WiseFoxOrangeDark)
+                Text(stringResource(R.string.share_ledger_title), fontWeight = FontWeight.Bold, color = WiseFoxOrangeDark)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (shareSuccess) {
                         Text(
-                            "✓ Shared successfully!",
+                            stringResource(R.string.share_success_short),
                             color      = Color(0xFF4CAF50),
                             fontWeight = FontWeight.SemiBold
                         )
@@ -305,7 +309,7 @@ fun LedgerDetailScreen(
                         OutlinedTextField(
                             value         = shareEmail,
                             onValueChange = { shareEmail = it; shareError = null },
-                            label         = { Text("Username", color = TextPrimary) },
+                            label         = { Text(stringResource(R.string.hint_username), color = TextPrimary) },
                             singleLine    = true,
                             isError       = shareError != null,
                             modifier      = Modifier.fillMaxWidth(),
@@ -346,7 +350,7 @@ fun LedgerDetailScreen(
                             }
                         }
                     }) {
-                        Text("Share", color = WiseFoxOrangeDark, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.share_capital), color = WiseFoxOrangeDark, fontWeight = FontWeight.Bold)
                     }
                 }
             },
@@ -357,7 +361,7 @@ fun LedgerDetailScreen(
                         shareEmail      = ""
                         shareError      = null
                     }) {
-                        Text("Cancel", color = TextSecondary)
+                        Text(stringResource(R.string.cancel), color = TextSecondary)
                     }
                 }
             }

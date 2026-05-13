@@ -30,9 +30,12 @@ import com.example.wisefox.viewmodels.ProfileUiState
 import com.example.wisefox.viewmodels.ShareLedgerState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.ui.res.stringResource
 import com.example.wisefox.model.UserLedgerResponse
+import com.example.wisefox.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +80,7 @@ fun SharedLedgersScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "SHARED LEDGERS",
+                        stringResource(R.string.shared_ledgers_title),
                         fontWeight  = FontWeight.ExtraBold,
                         letterSpacing = 2.sp,
                         color       = WiseFoxOrangeDark
@@ -85,7 +88,8 @@ fun SharedLedgersScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back",
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back),
                             tint = WiseFoxOrangeDark)
                     }
                 },
@@ -114,7 +118,7 @@ fun SharedLedgersScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "You don't have any shared ledgers yet.\nCreate one from the Home screen.",
+                            stringResource(R.string.no_shared_ledgers_yet),
                             color     = TextSecondary,
                             fontSize  = 14.sp,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -191,7 +195,7 @@ private fun SharedLedgerManageRow(
                         color    = TextSecondary
                     )
                     Text(
-                        text     = "${ledger.memberCount} members",
+                        text     = stringResource(R.string.members_count, ledger.memberCount),
                         fontSize = 11.sp,
                         color    = TextSecondary.copy(alpha = 0.7f)
                     )
@@ -222,7 +226,7 @@ private fun SharedLedgerManageRow(
                 )
                 if (members.isEmpty()) {
                     Text(
-                        text     = "Loading members...",
+                        text     = stringResource(R.string.loading_members),
                         fontSize = 12.sp,
                         color    = TextSecondary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
@@ -317,14 +321,14 @@ private fun ShareToUserDialog(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        text          = "SHARE LEDGER",
+                        text          = stringResource(R.string.share_ledger_title).uppercase(),
                         fontSize      = 18.sp,
                         fontWeight    = FontWeight.ExtraBold,
                         color         = WiseFoxOrangeDark,
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text     = "Share \"${ledger.name}\" with another user",
+                        text     = stringResource(R.string.share_ledger_by_username, ledger.name),
                         fontSize = 13.sp,
                         color    = TextSecondary
                     )
@@ -332,7 +336,7 @@ private fun ShareToUserDialog(
                     OutlinedTextField(
                         value         = usernameInput,
                         onValueChange = { usernameInput = it },
-                        label         = { Text("Username", color = TextPrimary) },
+                        label         = { Text(stringResource(R.string.hint_username), color = TextPrimary) },
                         singleLine    = true,
                         modifier      = Modifier.fillMaxWidth(),
                         enabled       = shareState !is ShareLedgerState.Sending,
@@ -398,7 +402,10 @@ private fun ShareToUserDialog(
                             shape    = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                if (shareState is ShareLedgerState.Sent) "Close" else "Cancel",
+                                if (shareState is ShareLedgerState.Sent)
+                                    stringResource(R.string.close)
+                                else
+                                    stringResource(R.string.cancel),
                                 color = TextPrimary
                             )
                         }
@@ -413,7 +420,7 @@ private fun ShareToUserDialog(
                                     containerColor = WiseFoxOrange
                                 )
                             ) {
-                                Text("Share", color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.share_capital), color = Color.White, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
