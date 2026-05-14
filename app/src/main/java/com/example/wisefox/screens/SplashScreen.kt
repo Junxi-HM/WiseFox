@@ -1,7 +1,6 @@
 package com.example.wisefox.screens
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
@@ -13,7 +12,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -21,10 +20,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.request.ImageRequest
 import kotlinx.coroutines.delay
 import com.example.wisefox.R
 import com.example.wisefox.ui.theme.*
-
 // ── Splash screen ─────────────────────────────────────────────────────────────
 // Shown briefly on app launch before navigating to Login.
 // Background matches the Login screen gradient (WiseFoxOrange family).
@@ -37,8 +39,19 @@ fun SplashScreen(
 ) {
     // Auto-navigate after 2.5 seconds
     LaunchedEffect(Unit) {
-        delay(2500L)
+        delay(3000L)
         onSplashFinished()
+    }
+
+    val context = LocalContext.current
+
+    // GIF-capable ImageLoader（只需在此处构建一次）
+    val gifImageLoader = remember {
+        ImageLoader.Builder(context)
+            .components {
+                add(GifDecoder.Factory())
+            }
+            .build()
     }
 
     // ── Background gradient — same palette as Login ───────────────────────────
@@ -87,8 +100,11 @@ fun SplashScreen(
                 )
 
                 // App icon / logo centred inside the arc
-                Image(
-                    painter            = painterResource(id = R.drawable.ic_wisefox_icon),
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(R.drawable.gif_splash)
+                        .build(),
+                    imageLoader        = gifImageLoader,
                     contentDescription = "WiseFox logo",
                     modifier           = Modifier.size(120.dp)
                 )
