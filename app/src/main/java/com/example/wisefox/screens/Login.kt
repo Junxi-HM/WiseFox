@@ -412,7 +412,7 @@ fun LoginScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onNavigateToRegister() }
+                            .clickable { launchGoogleSignIn() }
                     )
 
                     // ── 错误 / 提示 ────────────────────────────────────────────

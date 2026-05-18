@@ -126,7 +126,7 @@ fun SplashScreen(
 
             // ── Tagline (optional, soft) ───────────────────────────────────────
             Text(
-                text       = "Smart money, clever moves",
+                text       = "Track Smart, Live Wisely.",
                 fontFamily = LunchBoxFont,
                 fontWeight = FontWeight.Normal,
                 fontSize   = 18.sp,
