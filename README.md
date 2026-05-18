@@ -219,4 +219,4 @@ cd WiseFox
 
 ---
 
-*WiseFox Android — Smart money, clever moves 🦊*
+*WiseFox Android — Track Smart, Live Wisely. 🦊*
